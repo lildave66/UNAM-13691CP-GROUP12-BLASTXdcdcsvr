@@ -21,33 +21,41 @@ const PlanEventScreen = () => {
     title: "",
     description: "",
     launchDate: "",
-    targetCount: "",
+    blastSize: "", // Changed from targetCount
   });
 
   // Safety Checklist
   const [checks, setChecks] = useState({
-    audienceVerified: false,
-    contentReviewed: false,
-    apiConnected: false,
-    budgetApproved: false,
+    siteClear: false,
+    equipmentReady: false,
+    blastpatterVerified: false,
+    safetyPersonPresent: false,
   });
 
   const isSafetyComplete = Object.values(checks).every((val) => val === true);
 
   const validateStep1 = () => {
     if (!eventData.title.trim()) {
-      Alert.alert("Input Error", "Please provide a name for this campaign.");
+      Alert.alert(
+        "Input Error",
+        "Please provide a name for this blast operation.",
+      );
       return false;
     }
     
     // Basic date validation (YYYY-MM-DD HH:MM)
     const dateRegex = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/;
     if (!dateRegex.test(eventData.launchDate)) {
-      Alert.alert("Date Error", "Please enter a date in YYYY-MM-DD HH:MM format.");
+      Alert.alert(
+        "Date Error",
+        "Please enter a date in YYYY-MM-DD HH:MM format.",
+      );
       return false;
     }
 
-    const targetDate = new Date(eventData.launchDate.replace(' ', 'T')).getTime();
+    const targetDate = new Date(
+      eventData.launchDate.replace(" ", "T"),
+    ).getTime();
     if (isNaN(targetDate) || targetDate <= Date.now()) {
       Alert.alert("Time Error", "Launch time must be in the future.");
       return false;
