@@ -33,6 +33,9 @@ yarn-error.*
 # local env files
 .env*.local
 
+# Firebase config is checked in; use environment variables for sensitive keys
+# src/config/firebaseConfig.js  # Allows EAS remote builds to resolve the module
+
 # typescript
 *.tsbuildinfo
 
