@@ -1,8 +1,9 @@
-/**
+/** 
  * Firebase-backed Storage Service (Production)
  * All data is now stored in Firestore with proper authentication and RBAC
  */
 
+import { Alert } from "react-native";
 // Import project dependencies
 import AsyncStorage from "@react-native-async-storage/async-storage";
 // Import project dependencies
@@ -52,23 +53,28 @@ export const MINE_ROLES = {
 // EDITABLE ROLES (can create and edit blast records)
 // Declare a constant or variable
 const EDITABLE_ROLES = ["Engineer", "Specialist", "Analyst"];
-
+export const getThemePref = () => AsyncStorage.getItem(THEME_KEY);
 /**
  * ROLE-BASED ACCESS CONTROL UTILITIES
  */
 // Export a named constant or helper
 export const RBAC = {
   // Style object property
-  canEditBlasts: (userRole) => EDITABLE_ROLES.includes(userRole),
+  canEditBlasts: (userRole, isAdmin = false) =>
+    isAdmin || EDITABLE_ROLES.includes(userRole),
   // Style object property
-  canCreateBlasts: (userRole) => EDITABLE_ROLES.includes(userRole),
+  canCreateBlasts: (userRole, isAdmin = false) =>
+    isAdmin || EDITABLE_ROLES.includes(userRole),
   // Style object property
   canViewAllRecords: (userRole) => true,
   // Style object property
-  isCompanyAdmin: (userId, companyData) => userId === companyData?.registeredBy,
+  isCompanyAdmin: (userId, companyData) => {
+    if (!userId || !companyData) return false;
+    return userId === companyData.registeredBy;
+  },
   // Style object property
-  getUserAccessLevel: (userRole) =>
-    EDITABLE_ROLES.includes(userRole) ? "EDITOR" : "VIEWER",
+  getUserAccessLevel: (userRole, isAdmin = false) =>
+    isAdmin || EDITABLE_ROLES.includes(userRole) ? "EDITOR" : "VIEWER",
 };
 
 // Declare a constant or variable
@@ -326,20 +332,24 @@ export const storage = {
       }
 
       const currentUser = auth.currentUser;
-      if (!currentUser) throw new Error("No authenticated user");
+      if (!currentUser) throw new Error("No authenticated user. Please log in again.");
 
       const userData = (await storage.getUserData(true)) || {};
       const companyCode = blast.companyCode || userData?.companyCode;
-      if (!companyCode) throw new Error("Company code required");
+      if (!companyCode) throw new Error("Company code required for saving blasts.");
 
+      const isAdmin = RBAC.isCompanyAdmin(currentUser.uid, userData?.company);
       const expectedCanCreateBlasts = RBAC.canCreateBlasts(
         userData?.minePosition,
+        isAdmin
       );
+      
       const shouldSyncCanCreateBlasts =
         typeof userData?.canCreateBlasts === "undefined" ||
         userData.canCreateBlasts !== expectedCanCreateBlasts;
 
       if (shouldSyncCanCreateBlasts) {
+        console.log("Syncing user permissions...");
         await updateDoc(doc(db, "users", currentUser.uid), {
           canCreateBlasts: expectedCanCreateBlasts,
           updatedAt: serverTimestamp(),
@@ -350,6 +360,10 @@ export const storage = {
           CACHE_KEYS.CACHED_USER,
           JSON.stringify(userData),
         );
+      }
+
+      if (!userData.canCreateBlasts && !isAdmin) {
+        throw new Error("You do not have permission to create blast records. Current role: " + (userData?.minePosition || "Unknown"));
       }
 
       const blastsRef = collection(db, "companies", companyCode, "blasts");
@@ -370,6 +384,7 @@ export const storage = {
       };
     } catch (error) {
       console.error("Error saving blast:", error);
+      // Re-throw or Alert if needed, but returning null handles it in the UI
       return null;
     }
   },

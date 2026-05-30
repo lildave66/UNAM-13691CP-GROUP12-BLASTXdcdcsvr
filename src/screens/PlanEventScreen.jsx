@@ -160,7 +160,7 @@ const PlanEventScreen = () => {
     if (!RBAC.canEditBlasts(user?.minePosition, isAdmin)) {
       Alert.alert(
         "Permission Denied",
-        `Your position (${user?.minePosition}) does not have permission to plan blast operations.`,
+        `Your position (${user?.minePosition}) does not have permission to plan blast operations. Only Engineers, Specialists, Analysts, or Company Admins can perform this action.`,
         [{ text: "Go Back", onPress: () => navigation.goBack() }],
       );
     }

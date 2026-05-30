@@ -1,6 +1,6 @@
 /*
  * File: src\screens\AdminSettingsScreen.jsx
- * Description: Screen for company admins to manage team members.
+ * Description: Screen for company admins to manage team members and company profile.
  */
 
 import React, { useEffect, useState } from "react";
@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
   FlatList,
   Modal,
+  TextInput,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { storage, RBAC, MINE_ROLES } from "../utils/storage";
@@ -26,17 +27,33 @@ const AdminSettingsScreen = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [showRoleModal, setShowRoleModal] = useState(false);
+  
+  // Tab management
+  const [activeTab, setActiveTab] = useState("team"); // "team" or "company"
+  
+  // Company settings state
+  const [companyDetails, setCompanyDetails] = useState({
+    name: "",
+    mineType: "",
+    location: "",
+  });
 
   useEffect(() => {
     loadData();
   }, []);
 
-  const loadData = async () => {
+  const loadData = async (forceRefresh = false) => {
     setLoading(true);
-    const data = await storage.getUserData();
+    const data = await storage.getUserData(forceRefresh);
     setUserData(data);
 
     if (data) {
+      setCompanyDetails({
+        name: data.company?.name || "",
+        mineType: data.company?.mineType || "",
+        location: data.company?.location || "",
+      });
+
       const team = await storage.getTeammates(data.companyCode);
       // Sort: Admin first, then by name
       const sortedTeam = team.sort((a, b) => {
@@ -47,6 +64,28 @@ const AdminSettingsScreen = () => {
       setTeammates(sortedTeam);
     }
     setLoading(false);
+  };
+
+  const handleUpdateCompany = async () => {
+    if (!companyDetails.name.trim() || !companyDetails.mineType.trim()) {
+      Alert.alert("Error", "Company Name and Mine Type are required.");
+      return;
+    }
+
+    setActionLoading(true);
+    const success = await storage.updateCompanyInfo(
+      userData.companyCode,
+      companyDetails
+    );
+
+    if (success) {
+      Alert.alert("Success", "Company information updated successfully.");
+      // Refresh local data
+      await loadData(true);
+    } else {
+      Alert.alert("Error", "Failed to update company information.");
+    }
+    setActionLoading(false);
   };
 
   const handleRemoveMember = (member) => {
@@ -88,21 +127,22 @@ const AdminSettingsScreen = () => {
     setShowRoleModal(false);
     setActionLoading(true);
     
-    const success = await storage.updateTeammatePosition(
-      userData.companyCode,
-      selectedMember.uid,
-      newRole
-    );
-
-    if (success) {
-      setTeammates((prev) =>
-        prev.map((m) =>
-          m.uid === selectedMember.uid ? { ...m, minePosition: newRole } : m
-        )
-      );
-      Alert.alert("Success", `Role updated for ${selectedMember.name}`);
-    } else {
-      Alert.alert("Error", "Failed to update role.");
+    // In production storage.js, we might need updateTeammatePosition
+    // For now use storage if implemented, or fallback
+    try {
+        const success = await storage.updateUserPosition(selectedMember.uid, newRole);
+        if (success) {
+          setTeammates((prev) =>
+            prev.map((m) =>
+              m.uid === selectedMember.uid ? { ...m, minePosition: newRole } : m
+            )
+          );
+          Alert.alert("Success", `Role updated for ${selectedMember.name}`);
+        } else {
+          Alert.alert("Error", "Failed to update role.");
+        }
+    } catch (e) {
+        Alert.alert("Error", "An unexpected error occurred.");
     }
     
     setActionLoading(false);
@@ -117,7 +157,7 @@ const AdminSettingsScreen = () => {
       <View style={styles.memberCard}>
         <View style={styles.memberInfo}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{item.name.charAt(0)}</Text>
+            <Text style={styles.avatarText}>{item.name?.charAt(0) || "?"}</Text>
           </View>
           <View style={{ flex: 1 }}>
             <View style={styles.nameRow}>
@@ -179,24 +219,91 @@ const AdminSettingsScreen = () => {
         <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Back</Text>
         </Pressable>
-        <Text style={styles.headerTitle}>Team Management</Text>
+        <Text style={styles.headerTitle}>Admin Settings</Text>
         <View style={{ width: 60 }} />
       </View>
 
+      {/* Tabs */}
+      <View style={styles.tabBar}>
+        <Pressable 
+          style={[styles.tab, activeTab === "team" && styles.activeTab]} 
+          onPress={() => setActiveTab("team")}
+        >
+          <Text style={[styles.tabText, activeTab === "team" && styles.activeTabText]}>Manage Team</Text>
+        </Pressable>
+        <Pressable 
+          style={[styles.tab, activeTab === "company" && styles.activeTab]} 
+          onPress={() => setActiveTab("company")}
+        >
+          <Text style={[styles.tabText, activeTab === "company" && styles.activeTabText]}>Company Profile</Text>
+        </Pressable>
+      </View>
+
       <View style={styles.content}>
-        <Text style={styles.sectionTitle}>
-          Manage members of {userData?.company?.name}
-        </Text>
-        
-        <FlatList
-          data={teammates}
-          keyExtractor={(item) => item.uid}
-          renderItem={renderMember}
-          contentContainerStyle={{ paddingBottom: 20 }}
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>No team members found.</Text>
-          }
-        />
+        {activeTab === "team" ? (
+          <>
+            <Text style={styles.sectionTitle}>
+              Manage members of {userData?.company?.name}
+            </Text>
+            
+            <FlatList
+              data={teammates}
+              keyExtractor={(item) => item.uid}
+              renderItem={renderMember}
+              contentContainerStyle={{ paddingBottom: 20 }}
+              ListEmptyComponent={
+                <Text style={styles.emptyText}>No team members found.</Text>
+              }
+            />
+          </>
+        ) : (
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <Text style={styles.sectionTitle}>Mining Operation Details</Text>
+            
+            <View style={styles.formCard}>
+              <Text style={styles.inputLabel}>Company Name *</Text>
+              <TextInput
+                style={styles.textInput}
+                value={companyDetails.name}
+                onChangeText={(v) => setCompanyDetails({...companyDetails, name: v})}
+                placeholder="Enter company name"
+              />
+
+              <Text style={styles.inputLabel}>Mine Type *</Text>
+              <TextInput
+                style={styles.textInput}
+                value={companyDetails.mineType}
+                onChangeText={(v) => setCompanyDetails({...companyDetails, mineType: v})}
+                placeholder="e.g. Underground Coal Mine"
+              />
+
+              <Text style={styles.inputLabel}>Location</Text>
+              <TextInput
+                style={styles.textInput}
+                value={companyDetails.location}
+                onChangeText={(v) => setCompanyDetails({...companyDetails, location: v})}
+                placeholder="Region / Country"
+              />
+
+              <Pressable 
+                style={styles.saveButton}
+                onPress={handleUpdateCompany}
+              >
+                <Text style={styles.saveButtonText}>Save Changes</Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.infoCard}>
+              <Text style={styles.infoTitle}>Company Code</Text>
+              <Text style={styles.infoDescription}>
+                Share this unique code with your team members so they can join your mine when they sign up.
+              </Text>
+              <View style={styles.codeContainer}>
+                <Text style={styles.companyCodeText}>{userData?.companyCode}</Text>
+              </View>
+            </View>
+          </ScrollView>
+        )}
       </View>
 
       {/* Role Selection Modal */}
@@ -281,6 +388,33 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   backButtonText: { color: "#FFF", fontSize: 13, fontWeight: "500" },
+  
+  // Tab styles
+  tabBar: {
+    flexDirection: "row",
+    backgroundColor: "#FFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#ECEFF1",
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 15,
+    alignItems: "center",
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent",
+  },
+  activeTab: {
+    borderBottomColor: "#FF9900",
+  },
+  tabText: {
+    fontSize: 14,
+    color: "#95A5A6",
+    fontWeight: "600",
+  },
+  activeTabText: {
+    color: "#FF9900",
+  },
+
   content: { flex: 1, padding: 20 },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   sectionTitle: {
@@ -289,6 +423,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     fontWeight: "500",
   },
+  
+  // Member Card styles
   memberCard: {
     backgroundColor: "#FFF",
     borderRadius: 15,
@@ -357,6 +493,83 @@ const styles = StyleSheet.create({
     borderColor: "#FADBD8",
   },
   removeText: { color: "#E74C3C", fontSize: 12, fontWeight: "600" },
+  
+  // Form styles
+  formCard: {
+    backgroundColor: "#FFF",
+    borderRadius: 15,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "#ECEFF1",
+  },
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: "bold",
+    color: "#1A1F3A",
+    marginBottom: 8,
+    marginTop: 15,
+  },
+  textInput: {
+    backgroundColor: "#F8F9FA",
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 15,
+    borderWidth: 1,
+    borderColor: "#ECEFF1",
+    color: "#2C3E50",
+  },
+  saveButton: {
+    backgroundColor: "#FF9900",
+    paddingVertical: 15,
+    borderRadius: 10,
+    alignItems: "center",
+    marginTop: 25,
+  },
+  saveButtonText: {
+    color: "#FFF",
+    fontWeight: "bold",
+    fontSize: 15,
+  },
+  
+  // Info Card styles
+  infoCard: {
+    backgroundColor: "#FFF",
+    borderRadius: 15,
+    padding: 20,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: "#ECEFF1",
+    alignItems: "center",
+  },
+  infoTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#1A1F3A",
+    marginBottom: 10,
+  },
+  infoDescription: {
+    fontSize: 13,
+    color: "#95A5A6",
+    textAlign: "center",
+    lineHeight: 18,
+    marginBottom: 20,
+  },
+  codeContainer: {
+    backgroundColor: "#F8F9FA",
+    paddingHorizontal: 25,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#FF9900",
+    borderStyle: "dashed",
+  },
+  companyCodeText: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#FF9900",
+    letterSpacing: 2,
+  },
+
   emptyText: { textAlign: "center", color: "#95A5A6", marginTop: 40 },
   overlay: {
     ...StyleSheet.absoluteFillObject,

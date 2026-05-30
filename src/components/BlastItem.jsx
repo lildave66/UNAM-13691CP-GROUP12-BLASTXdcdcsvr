@@ -1,3 +1,6 @@
+// Member 13: BlastItem Lead
+import { useTheme } from "../utils/theme";
+
 import React from "react";
 import { StyleSheet, Text, View, Pressable } from "react-native";
 import Badge from "./Badge";
@@ -13,6 +16,7 @@ const BlastItem = ({ blast, onPress }) => {
       </View>
       <View style={styles.info}>
         <Text style={styles.title}>{blast.title}</Text>
+        <Text style={styles.subtitle}>{blast.status}</Text>
         <Text style={styles.subtitle}>📍 {blast.targetArea}</Text>
         {blast.createdByName && (
           <Text style={styles.createdBy}>Planned by: {blast.createdByName}</Text>
@@ -29,14 +33,14 @@ const BlastItem = ({ blast, onPress }) => {
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
-    backgroundColor: "#FFF",
+    backgroundColor: "useTheme().colors.card",
     borderRadius: 12,
     padding: 15,
     marginBottom: 10,
     alignItems: "center",
     gap: 12,
     borderWidth: 1,
-    borderColor: "#ECF0F1",
+    borderColor: "useTheme().colors.border",
   },
   statusIndicator: {
     width: 35,
@@ -47,7 +51,7 @@ const styles = StyleSheet.create({
   },
   statusIcon: {
     fontSize: 16,
-    color: "#FFF",
+    color: "theme.colors.text",
   },
   info: {
     flex: 1,
@@ -55,22 +59,22 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 14,
     fontWeight: "bold",
-    color: "#2C3E50",
+    color: "useTheme().colors.text",
   },
   subtitle: {
     fontSize: 12,
-    color: "#FF9900",
+    color: "useTheme().colors.text",
     marginTop: 2,
   },
   createdBy: {
     fontSize: 11,
-    color: "#7F8C8D",
+    color: "useTheme().colors.text",
     fontStyle: "italic",
     marginTop: 2,
   },
   time: {
     fontSize: 11,
-    color: "#95A5A6",
+    color: "useTheme().colors.text",
     marginTop: 1,
   },
 });
