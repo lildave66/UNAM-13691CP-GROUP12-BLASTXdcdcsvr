@@ -1,4 +1,9 @@
 // Member 13: BlastItem Lead
+/**
+ * @description Standardized card for displaying blast data
+ * @param {Object} blast - The blast object containing title, status, targetArea, etc.
+ * @param {Function} onPress - Callback when the item is pressed
+ */
 import { useTheme } from "../utils/theme";
 
 import React from "react";
@@ -6,8 +11,83 @@ import { StyleSheet, Text, View, Pressable } from "react-native";
 import Badge from "./Badge";
 
 const BlastItem = ({ blast, onPress }) => {
+  const theme = useTheme();
   const isScheduled = blast.status === "Scheduled";
   const statusColor = isScheduled ? "#FF9900" : "#2ECC71";
+
+  // Step 5: Formatting production timestamps
+  const isNew =
+    Math.floor(
+      (Date.now() - new Date(blast.createdAt).getTime()) / (1000 * 60 * 60),
+    ) < 24;
+
+  // Get icon based on blast type
+  const getBlastIcon = () => {
+    if (blast?.blastSize === "Large") return "💥";
+    if (blast?.blastSize === "Medium") return "⚡";
+    return "◇";
+  };
+
+  const styles = StyleSheet.create({
+    container: {
+      flexDirection: "row",
+      backgroundColor: theme.colors.card,
+      borderRadius: 12,
+      padding: 15,
+      marginBottom: 10,
+      alignItems: "center",
+      gap: 12,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    statusIndicator: {
+      width: 35,
+      height: 35,
+      borderRadius: 10,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    statusIcon: {
+      fontSize: 16,
+      color: theme.colors.text,
+    },
+    info: {
+      flex: 1,
+    },
+    title: {
+      fontSize: 14,
+      fontWeight: "bold",
+      color: theme.colors.text,
+    },
+    subtitle: {
+      fontSize: 12,
+      color: theme.colors.text,
+      marginTop: 2,
+    },
+    createdBy: {
+      fontSize: 11,
+      color: theme.colors.text,
+      fontStyle: "italic",
+      marginTop: 2,
+    },
+    time: {
+      fontSize: 11,
+      color: theme.colors.text,
+      marginTop: 1,
+    },
+    newBadge: {
+      backgroundColor: "#FF6B6B",
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 4,
+      marginTop: 4,
+    },
+    newBadgeText: {
+      fontSize: 10,
+      color: "#FFF",
+      fontWeight: "bold",
+    },
+  });
 
   return (
     <Pressable style={styles.container} onPress={onPress}>
@@ -15,68 +95,29 @@ const BlastItem = ({ blast, onPress }) => {
         <Text style={styles.statusIcon}>{isScheduled ? "⏳" : "✓"}</Text>
       </View>
       <View style={styles.info}>
-        <Text style={styles.title}>{blast.title}</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <Text style={styles.title}>{blast.title}</Text>
+          <Text>{getBlastIcon()}</Text>
+        </View>
         <Text style={styles.subtitle}>{blast.status}</Text>
-        <Text style={styles.subtitle}>📍 {blast.targetArea}</Text>
+        <Text style={styles.subtitle}>📍 {blast?.targetArea}</Text>
         {blast.createdByName && (
-          <Text style={styles.createdBy}>Planned by: {blast.createdByName}</Text>
+          <Text style={styles.createdBy}>
+            Planned by: {blast.createdByName}
+          </Text>
         )}
         <Text style={styles.time}>
           {new Date(blast.createdAt).toLocaleDateString()}
         </Text>
+        {isNew && (
+          <View style={styles.newBadge}>
+            <Text style={styles.newBadgeText}>🆕 New</Text>
+          </View>
+        )}
       </View>
       <Badge label={blast.status} color={statusColor} />
     </Pressable>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    backgroundColor: "useTheme().colors.card",
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 10,
-    alignItems: "center",
-    gap: 12,
-    borderWidth: 1,
-    borderColor: "useTheme().colors.border",
-  },
-  statusIndicator: {
-    width: 35,
-    height: 35,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  statusIcon: {
-    fontSize: 16,
-    color: "theme.colors.text",
-  },
-  info: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "useTheme().colors.text",
-  },
-  subtitle: {
-    fontSize: 12,
-    color: "useTheme().colors.text",
-    marginTop: 2,
-  },
-  createdBy: {
-    fontSize: 11,
-    color: "useTheme().colors.text",
-    fontStyle: "italic",
-    marginTop: 2,
-  },
-  time: {
-    fontSize: 11,
-    color: "useTheme().colors.text",
-    marginTop: 1,
-  },
-});
 
 export default BlastItem;
