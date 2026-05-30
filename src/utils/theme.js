@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Network from 'expo-network';
 
 // Define our color palettes
 export const Colors = {
@@ -35,6 +36,7 @@ const ThemeContext = createContext();
 export const ThemeProvider = ({ children }) => {
   const systemColorScheme = useColorScheme();
   const [isDark, setIsDark] = useState(systemColorScheme === 'dark');
+  const [isOffline, setIsOffline] = useState(false);
 
   // Load saved theme preference
   useEffect(() => {
@@ -45,6 +47,20 @@ export const ThemeProvider = ({ children }) => {
       }
     };
     loadTheme();
+
+    // Monitor Network Status
+    const checkNetwork = async () => {
+      try {
+        const state = await Network.getNetworkStateAsync();
+        setIsOffline(!state.isConnected || !state.isInternetReachable);
+      } catch (e) {
+        console.warn("Network check failed", e);
+      }
+    };
+
+    const interval = setInterval(checkNetwork, 5000); // Check every 5s
+    checkNetwork(); // Initial check
+    return () => clearInterval(interval);
   }, []);
 
   const toggleTheme = async () => {
@@ -56,7 +72,7 @@ export const ThemeProvider = ({ children }) => {
   const theme = isDark ? Colors.dark : Colors.light;
 
   return (
-    <ThemeContext.Provider value={{ theme, isDark, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, isDark, toggleTheme, isOffline }}>
       {children}
     </ThemeContext.Provider>
   );
