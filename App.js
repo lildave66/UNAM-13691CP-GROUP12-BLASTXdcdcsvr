@@ -1,47 +1,66 @@
-import React, { useEffect, useRef } from "react";
-import { NavigationContainer } from "@react-navigation/native";
-import * as Notifications from "expo-notifications";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "./src/utils/firebase";
-import { registerForPushNotificationsAsync } from "./src/utils/notifications";
-import AppNavigator from "./src/navigation/AppNavigator";
+/*
+ * File: App.js
+ * Description: Source file for BlastXApp.
+ * Added comments to improve readability and explain app behavior.
+ */
 
+// Import project dependencies
+import React, { useEffect, useState } from "react";
+// Import project dependencies
+import { NavigationContainer } from "@react-navigation/native";
+// Import project dependencies
+import { ActivityIndicator, View } from "react-native";
+// Import project dependencies
+import { onAuthStateChanged } from "firebase/auth";
+// Import project dependencies
+import { auth } from "./src/utils/firebase";
+// Import project dependencies
+import { registerForPushNotificationsAsync } from "./src/utils/notifications";
+// Import project dependencies
+import AppNavigator from "./src/navigation/AppNavigator";
+import { ThemeProvider } from "./src/utils/theme";
+
+// Export the default component or module
 export default function App() {
-  const notificationListener = useRef();
-  const responseListener = useRef();
+  const [user, setUser] = useState(null);
+  const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
-    // 1. Listen for Auth State
+    // Listen for auth state changes
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      if (initializing) setInitializing(false);
+      
       if (user) {
+        console.log("User is signed in:", user.uid);
+        // Register for push notifications when user is signed in
         registerForPushNotificationsAsync();
+      } else {
+        console.log("No user signed in");
       }
     });
 
-    // 2. Handle Foreground Notifications
-    notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
-      console.log("Notification Received:", notification);
-    });
-
-    // 3. Handle Notification Clicks
-    responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log("Notification Clicked:", response);
-    });
+    console.log("Firebase initialized");
 
     return () => {
       unsubscribe();
-      if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(notificationListener.current);
-      }
-      if (responseListener.current) {
-        Notifications.removeNotificationSubscription(responseListener.current);
-      }
     };
-  }, []);
+  }, [initializing]);
 
+  if (initializing) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#FF9900" />
+      </View>
+    );
+  }
+
+// Return JSX layout
   return (
-    <NavigationContainer>
-      <AppNavigator />
-    </NavigationContainer>
+    <ThemeProvider>
+      <NavigationContainer>
+        <AppNavigator user={user} />
+      </NavigationContainer>
+    </ThemeProvider>
   );
 }

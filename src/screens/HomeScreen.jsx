@@ -1,219 +1,117 @@
-import {
-  StyleSheet,
-  Text,
-  View,
-  Image,
-  ScrollView,
-  Pressable,
-  ActivityIndicator,
-} from "react-native";
+/*
+ * File: src\screens\HomeScreen.jsx
+ * Description: Source file for BlastXApp.
+ * Added comments to improve readability and explain app behavior.
+ */
+
+// Import project dependencies
+import { StyleSheet, Text, View, Image, ActivityIndicator, Pressable } from "react-native";
+// Import project dependencies
 import React, { useEffect, useState } from "react";
+// Import project dependencies
 import { useNavigation } from "@react-navigation/native";
+// Import project dependencies
 import { storage } from "../utils/storage";
-import logo from "../utils/assets/images/light icon (1).png";
+// Import project dependencies
+import logo from "../utils/assets/images/icon.png";
+// Import project dependencies
+import { Button, ScreenWrapper, Spacer } from "../components";
 
+// Define a function or component using an arrow function
 const HomeScreen = () => {
+// Declare a constant or variable
   const navigation = useNavigation();
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    checkInitialState();
-  }, []);
-
-  const checkInitialState = async () => {
-    const isComplete = await storage.isSetupComplete();
-    if (isComplete) {
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "Dashboard" }],
-      });
-    } else {
-      setIsLoading(false);
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <View style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" color="#FF9900" />
-      </View>
-    );
-  }
-
+// Return JSX layout
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Hero Section */}
-      <View style={styles.heroSection}>
+    <ScreenWrapper style={styles.wrapper}>
+      <View style={styles.content}>
         <Image source={logo} style={styles.logo} />
-        <Text style={styles.heroTitle}>Reach your audience with BlastX</Text>
-        <Text style={styles.heroDescription}>
-          The most powerful automated blast scheduler for modern marketing
-          teams.
+        <Spacer size={32} />
+        <Text style={styles.title}>BlastX</Text>
+        <Spacer size={12} />
+        <Text style={styles.subtitle}>
+          Mine blast scheduling made simple.
         </Text>
-      </View>
-
-      {/* Simplified Features */}
-      <View style={styles.featuresContainer}>
-        <View style={styles.featureRow}>
-          <Text style={styles.featureEmoji}>📅</Text>
-          <View style={styles.featureTextContainer}>
-            <Text style={styles.featureLabel}>Smart Scheduling</Text>
-            <Text style={styles.featureSub}>Plan your campaigns weeks in advance.</Text>
-          </View>
-        </View>
-        <View style={styles.featureRow}>
-          <Text style={styles.featureEmoji}>📊</Text>
-          <View style={styles.featureTextContainer}>
-            <Text style={styles.featureLabel}>Real-time Analytics</Text>
-            <Text style={styles.featureSub}>Track open rates and engagement instantly.</Text>
-          </View>
-        </View>
-        <View style={styles.featureRow}>
-          <Text style={styles.featureEmoji}>🚀</Text>
-          <View style={styles.featureTextContainer}>
-            <Text style={styles.featureLabel}>Multi-channel Delivery</Text>
-            <Text style={styles.featureSub}>Email, SMS, and Push in one single blast.</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* CTA Section */}
-      <View style={styles.ctaSection}>
-        <Pressable 
-          style={styles.primaryButton} 
+        <Spacer size={40} />
+        <Button
+          label="Get Started"
           onPress={() => navigation.navigate("Signup")}
-        >
-          <Text style={styles.primaryButtonText}>Get Started for Free</Text>
-        </Pressable>
-        <Pressable 
-          style={styles.secondaryButton} 
-          onPress={() => navigation.navigate("Login")}
-        >
-          <Text style={styles.secondaryButtonText}>Sign In</Text>
+          style={styles.button}
+        />
+        <Spacer size={16} />
+        <Pressable onPress={() => navigation.navigate("Login")}>
+          <Text style={{ color: "#FF9900", fontWeight: "bold" }}>Login to Existing Account</Text>
         </Pressable>
       </View>
-
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          BlastX © 2026 • Secure & Encrypted
-        </Text>
-      </View>
-    </ScrollView>
+    </ScreenWrapper>
   );
 };
 
+// Export the default component or module
 export default HomeScreen;
 
+// Declare a constant or variable
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F8F9FA",
-  },
-  center: {
+// Style object property
+  wrapper: {
+// Style object property
     justifyContent: "center",
-    alignItems: "center",
+// Style object property
+    paddingHorizontal: 28,
   },
-  heroSection: {
-    alignItems: "center",
-    paddingHorizontal: 30,
-    paddingTop: 100,
-    paddingBottom: 40,
-  },
-  logo: {
-    width: 120,
-    height: 120,
-    borderRadius: 24,
-    marginBottom: 30,
-  },
-  heroTitle: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#1A1F3A",
-    textAlign: "center",
-    lineHeight: 40,
-  },
-  heroDescription: {
-    fontSize: 16,
-    color: "#95A5A6",
-    textAlign: "center",
-    marginTop: 15,
-    lineHeight: 24,
-    paddingHorizontal: 10,
-  },
-  featuresContainer: {
-    paddingHorizontal: 30,
-    marginBottom: 40,
-  },
-  featureRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 25,
-    backgroundColor: "#FFF",
-    padding: 15,
-    borderRadius: 15,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
-  },
-  featureEmoji: {
-    fontSize: 28,
-    marginRight: 20,
-  },
-  featureTextContainer: {
+// Style object property
+  center: {
+// Style object property
     flex: 1,
+// Style object property
+    justifyContent: "center",
+// Style object property
+    alignItems: "center",
   },
-  featureLabel: {
-    fontSize: 16,
+// Style object property
+  content: {
+// Style object property
+    alignItems: "center",
+// Style object property
+    paddingVertical: 80,
+  },
+// Style object property
+  logo: {
+// Style object property
+    width: 140,
+// Style object property
+    height: 140,
+// Style object property
+    borderRadius: 28,
+  },
+// Style object property
+  title: {
+// Style object property
+    fontSize: 36,
+// Style object property
     fontWeight: "bold",
+// Style object property
     color: "#1A1F3A",
+// Style object property
+    textAlign: "center",
   },
-  featureSub: {
-    fontSize: 13,
-    color: "#95A5A6",
-    marginTop: 2,
-  },
-  ctaSection: {
-    paddingHorizontal: 30,
-    paddingBottom: 40,
-  },
-  primaryButton: {
-    backgroundColor: "#FF9900",
-    borderRadius: 12,
-    paddingVertical: 18,
-    alignItems: "center",
-    shadowColor: "#FF9900",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  primaryButtonText: {
-    color: "#FFF",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  secondaryButton: {
-    backgroundColor: "#FFF",
-    borderRadius: 12,
-    paddingVertical: 18,
-    alignItems: "center",
-    marginTop: 15,
-    borderWidth: 2,
-    borderColor: "#E0E0E0",
-  },
-  secondaryButtonText: {
+// Style object property
+  subtitle: {
+// Style object property
     fontSize: 16,
-    fontWeight: "bold",
-    color: "#1A1F3A",
+// Style object property
+    color: "#6B7280",
+// Style object property
+    textAlign: "center",
+// Style object property
+    lineHeight: 24,
+// Style object property
+    marginHorizontal: 10,
   },
-  footer: {
-    paddingVertical: 30,
-    alignItems: "center",
-  },
-  footerText: {
-    fontSize: 12,
-    color: "#BDC3C7",
+// Style object property
+  button: {
+// Style object property
+    minWidth: 220,
   },
 });
