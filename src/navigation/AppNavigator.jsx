@@ -57,7 +57,8 @@ export const AppNavigator = ({ user }) => {
         return;
       }
 
-      const userData = await storage.getUserData(true);
+      // Don't force refresh here to allow offline start
+      const userData = await storage.getUserData();
       const isSetupDone = await storage.isSetupComplete();
 
       let shouldRouteToSetup = false;
@@ -65,13 +66,19 @@ export const AppNavigator = ({ user }) => {
       if (!userData?.companyCode) {
         shouldRouteToSetup = !isSetupDone;
       } else {
-        const companySnap = await getDoc(
-          doc(db, "companies", userData.companyCode),
-        );
-        const companyData = companySnap.exists() ? companySnap.data() : null;
+        try {
+          const companySnap = await getDoc(
+            doc(db, "companies", userData.companyCode),
+          );
+          const companyData = companySnap.exists() ? companySnap.data() : null;
 
-        shouldRouteToSetup =
-          companyData?.registeredBy === user.uid && !isSetupDone;
+          shouldRouteToSetup =
+            companyData?.registeredBy === user.uid && !isSetupDone;
+        } catch (error) {
+          console.log("Offline or error during routing check:", error);
+          // If we have companyCode but are offline, assume dashboard is better than forcing setup
+          shouldRouteToSetup = false;
+        }
       }
 
       if (isMounted) {

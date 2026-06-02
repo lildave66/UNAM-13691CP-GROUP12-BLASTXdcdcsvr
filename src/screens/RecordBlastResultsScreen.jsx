@@ -11,9 +11,15 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
+// Import project dependencies
 import React, { useState, useEffect } from "react";
+// Import project dependencies
 import { useNavigation, useRoute } from "@react-navigation/native";
+// Import project dependencies
 import { storage, RBAC } from "../utils/storage";
+// Import project dependencies
+import { ExportUtils } from "../utils/export";
+// Import project dependencies
 import { Input, Button } from "../components";
 
 // Define a function or component using an arrow function
@@ -27,6 +33,7 @@ const RecordBlastResultsScreen = () => {
 
 // Declare a constant or variable
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
 // Declare a constant or variable
   const [userData, setUserData] = useState(null);
 // Declare a constant or variable
@@ -36,11 +43,11 @@ const RecordBlastResultsScreen = () => {
 // Declare a constant or variable
   const [results, setResults] = useState({
 // Style object property
-    rocksFragmented: blast?.rocksFragmented || "",
+    rocksFragmented: blast?.results?.rocksFragmented || "",
 // Style object property
-    productivityRating: blast?.productivityRating || "",
+    productivityRating: blast?.results?.productivityRating || "",
 // Style object property
-    safetyIncidents: blast?.safetyIncidents?.toString() || "0",
+    safetyIncidents: blast?.results?.safetyIncidents?.toString() || "0",
 // Style object property
     notes: blast?.results?.notes || "",
   });
@@ -48,6 +55,31 @@ const RecordBlastResultsScreen = () => {
   useEffect(() => {
     loadUserData();
   }, []);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      // Create a single-item array for the report generator
+      const singleBlastReport = [{
+        ...blast,
+        results: {
+          ...results,
+          recordedAt: new Date().toISOString()
+        }
+      }];
+      
+      await ExportUtils.generateBlastReport(
+        singleBlastReport,
+        userData?.company,
+        `Operation: ${blast.title}`
+      );
+    } catch (error) {
+      console.error("Export failed", error);
+      Alert.alert("Export Failed", "Could not generate PDF report.");
+    } finally {
+      setExporting(false);
+    }
+  };
 
 // Define a function or component using an arrow function
   const loadUserData = async () => {
@@ -80,7 +112,36 @@ const RecordBlastResultsScreen = () => {
 
 // Define a function or component using an arrow function
   const handleSave = async () => {
-// ... (existing handleSave)
+    if (!results.rocksFragmented.trim() || !results.productivityRating.trim()) {
+      Alert.alert("Error", "Please fill in all required fields.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const success = await storage.recordBlastResults(
+        blast.companyCode || userData?.companyCode,
+        blast.id,
+        {
+          ...results,
+          productivityRating: parseFloat(results.productivityRating),
+          safetyIncidents: parseInt(results.safetyIncidents) || 0,
+        }
+      );
+
+      if (success) {
+        Alert.alert("Success", "Blast results recorded successfully.", [
+          { text: "OK", onPress: () => navigation.navigate("Dashboard") },
+        ]);
+      } else {
+        Alert.alert("Error", "Failed to record results. Please try again.");
+      }
+    } catch (error) {
+      console.error("Save error", error);
+      Alert.alert("Error", "An unexpected error occurred.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDelete = () => {
@@ -129,13 +190,20 @@ const RecordBlastResultsScreen = () => {
             <Text style={styles.backButton}>← Back</Text>
           </Pressable>
           <Text style={styles.headerTitle}>Record Blast Results</Text>
-          {isAdminUser ? (
-            <Pressable onPress={handleDelete}>
-              <Text style={styles.deleteHeaderButton}>Delete</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <Pressable onPress={handleExport} disabled={exporting}>
+              {exporting ? (
+                <ActivityIndicator size="small" color="#FF9900" />
+              ) : (
+                <Text style={styles.exportText}>📥 PDF</Text>
+              )}
             </Pressable>
-          ) : (
-            <View style={{ width: 40 }} />
-          )}
+            {isAdminUser && (
+              <Pressable onPress={handleDelete}>
+                <Text style={styles.deleteHeaderButton}>Delete</Text>
+              </Pressable>
+            )}
+          </View>
         </View>
 
         {/* Permission Status */}
@@ -299,6 +367,11 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
 // Style object property
     color: "#1A1F3A",
+  },
+  exportText: {
+    color: "#FF9900",
+    fontSize: 14,
+    fontWeight: "bold",
   },
 // Style object property
   deleteHeaderButton: {

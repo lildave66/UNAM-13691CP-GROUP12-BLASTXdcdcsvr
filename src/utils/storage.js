@@ -53,7 +53,6 @@ export const MINE_ROLES = {
 // EDITABLE ROLES (can create and edit blast records)
 // Declare a constant or variable
 const EDITABLE_ROLES = ["Engineer", "Specialist", "Analyst"];
-export const getThemePref = () => AsyncStorage.getItem(THEME_KEY);
 /**
  * ROLE-BASED ACCESS CONTROL UTILITIES
  */
@@ -210,8 +209,9 @@ export const storage = {
 
       const currentUser = auth.currentUser;
       if (!currentUser) {
-        console.warn("No authenticated user, returning null");
-        return null;
+        // Try to get from cache even if no auth (for offline start)
+        const cached = await AsyncStorage.getItem(CACHE_KEYS.CACHED_USER);
+        return cached ? JSON.parse(cached) : null;
       }
 
       // Check cache first
@@ -219,8 +219,10 @@ export const storage = {
         const cached = await AsyncStorage.getItem(CACHE_KEYS.CACHED_USER);
         if (cached) {
           const cachedUser = JSON.parse(cached);
-          const syncedUser = await syncUserCanCreateBlasts(cachedUser);
-          return await hydrateCompanyDetails(syncedUser);
+          // Sync in background or later, don't block
+          syncUserCanCreateBlasts(cachedUser).catch(console.error);
+          hydrateCompanyDetails(cachedUser).catch(console.error);
+          return cachedUser;
         }
       }
 
@@ -246,7 +248,9 @@ export const storage = {
       return hydratedUserData;
     } catch (error) {
       console.error("Error getting user data:", error);
-      return null;
+      // Fallback to cache on error (e.g. offline)
+      const cached = await AsyncStorage.getItem(CACHE_KEYS.CACHED_USER);
+      return cached ? JSON.parse(cached) : null;
     }
   },
 
@@ -254,13 +258,15 @@ export const storage = {
     try {
       const canCreateBlasts = RBAC.canCreateBlasts(minePosition);
       const userDocRef = doc(db, "users", userId);
-      await updateDoc(userDocRef, {
+      
+      // Update Firestore (will sync when online)
+      updateDoc(userDocRef, {
         minePosition,
         canCreateBlasts,
         updatedAt: serverTimestamp(),
-      });
+      }).catch(err => console.log("Offline: Update user position queued"));
 
-      // Update cache
+      // Update cache immediately
       const cached = await AsyncStorage.getItem(CACHE_KEYS.CACHED_USER);
       if (cached) {
         const userData = JSON.parse(cached);
@@ -285,17 +291,18 @@ export const storage = {
       if (!currentUser) throw new Error("No authenticated user");
 
       const companyDocRef = doc(db, "companies", companyCode);
-      await updateDoc(companyDocRef, {
+      // Update Firestore (queued if offline)
+      updateDoc(companyDocRef, {
         ...details,
         updatedAt: serverTimestamp(),
-      });
+      }).catch(err => console.log("Offline: Update company info queued"));
 
       // Update user cache
       const userDocRef = doc(db, "users", currentUser.uid);
-      await updateDoc(userDocRef, {
+      updateDoc(userDocRef, {
         company: details,
         updatedAt: serverTimestamp(),
-      });
+      }).catch(err => console.log("Offline: Update user company info queued"));
 
       const cachedUser = await AsyncStorage.getItem(CACHE_KEYS.CACHED_USER);
       if (cachedUser) {
@@ -319,6 +326,25 @@ export const storage = {
   },
 
   /**
+   * COMPANY METHODS
+   */
+  getCompany: async (companyCode) => {
+    try {
+      if (!companyCode) return null;
+      const companyDocRef = doc(db, "companies", companyCode);
+      const companySnap = await getDoc(companyDocRef);
+
+      if (companySnap.exists()) {
+        return { code: companyCode, ...companySnap.data() };
+      }
+      return null;
+    } catch (error) {
+      console.error("Error getting company:", error);
+      return null;
+    }
+  },
+
+  /**
    * BLAST OPERATIONS METHODS
    */
   saveBlast: async (blast) => {
@@ -332,13 +358,17 @@ export const storage = {
       }
 
       const currentUser = auth.currentUser;
-      if (!currentUser) throw new Error("No authenticated user. Please log in again.");
+      if (!currentUser) {
+        // If offline and not logged in, we might still have user data in cache
+        const cached = await AsyncStorage.getItem(CACHE_KEYS.CACHED_USER);
+        if (!cached) throw new Error("No authenticated user and no cache found.");
+      }
 
-      const userData = (await storage.getUserData(true)) || {};
+      const userData = (await storage.getUserData()) || {};
       const companyCode = blast.companyCode || userData?.companyCode;
       if (!companyCode) throw new Error("Company code required for saving blasts.");
 
-      const isAdmin = RBAC.isCompanyAdmin(currentUser.uid, userData?.company);
+      const isAdmin = RBAC.isCompanyAdmin(currentUser?.uid || userData?.uid, userData?.company);
       const expectedCanCreateBlasts = RBAC.canCreateBlasts(
         userData?.minePosition,
         isAdmin
@@ -348,12 +378,12 @@ export const storage = {
         typeof userData?.canCreateBlasts === "undefined" ||
         userData.canCreateBlasts !== expectedCanCreateBlasts;
 
-      if (shouldSyncCanCreateBlasts) {
+      if (shouldSyncCanCreateBlasts && currentUser) {
         console.log("Syncing user permissions...");
-        await updateDoc(doc(db, "users", currentUser.uid), {
+        updateDoc(doc(db, "users", currentUser.uid), {
           canCreateBlasts: expectedCanCreateBlasts,
           updatedAt: serverTimestamp(),
-        });
+        }).catch(err => console.log("Offline: Sync permissions queued"));
 
         userData.canCreateBlasts = expectedCanCreateBlasts;
         await AsyncStorage.setItem(
@@ -371,11 +401,12 @@ export const storage = {
       const newBlastData = {
         ...blast,
         companyCode,
-        createdBy: currentUser.uid,
+        createdBy: currentUser?.uid || userData?.uid,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
 
+      // addDoc works offline with persistence
       const docRef = await addDoc(blastsRef, newBlastData);
 
       return {
@@ -384,8 +415,19 @@ export const storage = {
       };
     } catch (error) {
       console.error("Error saving blast:", error);
-      // Re-throw or Alert if needed, but returning null handles it in the UI
       return null;
+    }
+  },
+
+  deleteBlast: async (companyCode, blastId) => {
+    try {
+      if (!companyCode || !blastId) return false;
+      const blastDocRef = doc(db, "companies", companyCode, "blasts", blastId);
+      await deleteDoc(blastDocRef);
+      return true;
+    } catch (error) {
+      console.error("Error deleting blast:", error);
+      return false;
     }
   },
 

@@ -15,7 +15,11 @@ import {
   signOut,
 } from "firebase/auth";
 // Import project dependencies
-import { getFirestore } from "firebase/firestore";
+import { 
+  initializeFirestore, 
+  persistentLocalCache,
+  getFirestore 
+} from "firebase/firestore";
 // Import project dependencies
 import AsyncStorage from "@react-native-async-storage/async-storage";
 // Import project dependencies
@@ -25,42 +29,32 @@ import { Platform } from "react-native";
 import { firebaseConfig } from "../config/firebaseConfig";
 
 // Validate config
-// Declare a constant or variable
-const requiredFields = [
-  "apiKey",
-  "authDomain",
-  "projectId",
-  "storageBucket",
-  "messagingSenderId",
-  "appId",
-];
-// Declare a constant or variable
+// ... (omitting validation for brevity in replace context)
+const requiredFields = ["apiKey", "authDomain", "projectId", "storageBucket", "messagingSenderId", "appId"];
 const missingFields = requiredFields.filter((field) => !firebaseConfig[field]);
-
-// Control flow statement
 if (missingFields.length > 0) {
-// Control flow statement
-  throw new Error(
-    `Firebase config incomplete. Missing: ${missingFields.join(", ")}`,
-  );
+  throw new Error(`Firebase config incomplete. Missing: ${missingFields.join(", ")}`);
 }
 
 // Initialize Firebase
-// Declare a constant or variable
 const app = initializeApp(firebaseConfig);
 
 // Initialize Auth with cross-platform persistence
-// Declare a constant or variable
 const auth = initializeAuth(app, {
-// Style object property
   persistence: Platform.OS === 'web' 
     ? browserLocalPersistence 
     : getReactNativePersistence(AsyncStorage),
 });
 
-// Initialize Firestore
-// Declare a constant or variable
-const db = getFirestore(app);
+// Initialize Firestore with persistence (Safer initialization)
+let db;
+try {
+  db = initializeFirestore(app, {
+    localCache: persistentLocalCache(),
+  });
+} catch (e) {
+  db = getFirestore(app);
+}
 
 // Export module members
 export { app, auth, db };

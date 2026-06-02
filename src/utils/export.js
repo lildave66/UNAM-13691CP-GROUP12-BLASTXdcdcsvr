@@ -14,6 +14,10 @@ export const ExportUtils = {
    */
   generateBlastReport: async (blasts, company, filterStatus = "All") => {
     try {
+      if (!Array.isArray(blasts)) {
+        console.error("Export failed: blasts is not an array");
+        return false;
+      }
       const companyName = company?.name || "Mine Blast Operations";
       const reportDate = new Date().toLocaleDateString();
       
