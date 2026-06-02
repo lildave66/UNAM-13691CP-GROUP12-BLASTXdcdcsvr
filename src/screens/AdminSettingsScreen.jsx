@@ -1,7 +1,7 @@
-/*
- * File: src\screens\AdminSettingsScreen.jsx
- * Description: Screen for company admins to manage team members and company profile.
- */
+
+
+
+
 
 import React, { useEffect, useState } from "react";
 import {
@@ -28,10 +28,10 @@ const AdminSettingsScreen = () => {
   const [selectedMember, setSelectedMember] = useState(null);
   const [showRoleModal, setShowRoleModal] = useState(false);
   
-  // Tab management
-  const [activeTab, setActiveTab] = useState("team"); // "team" or "company"
   
-  // Company settings state
+  const [activeTab, setActiveTab] = useState("team"); 
+  
+  
   const [companyDetails, setCompanyDetails] = useState({
     name: "",
     mineType: "",
@@ -80,7 +80,7 @@ const AdminSettingsScreen = () => {
 
     if (success) {
       Alert.alert("Success", "Company information updated successfully.");
-      // Refresh local data
+      
       await loadData(true);
     } else {
       Alert.alert("Error", "Failed to update company information.");
@@ -127,8 +127,8 @@ const AdminSettingsScreen = () => {
     setShowRoleModal(false);
     setActionLoading(true);
     
-    // In production storage.js, we might need updateTeammatePosition
-    // For now use storage if implemented, or fallback
+    
+    
     try {
         const success = await storage.updateUserPosition(selectedMember.uid, newRole);
         if (success) {
@@ -214,7 +214,7 @@ const AdminSettingsScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
+      {}
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Back</Text>
@@ -223,7 +223,7 @@ const AdminSettingsScreen = () => {
         <View style={{ width: 60 }} />
       </View>
 
-      {/* Tabs */}
+      {}
       <View style={styles.tabBar}>
         <Pressable 
           style={[styles.tab, activeTab === "team" && styles.activeTab]} 
@@ -306,7 +306,7 @@ const AdminSettingsScreen = () => {
         )}
       </View>
 
-      {/* Role Selection Modal */}
+      {}
       <Modal
         visible={showRoleModal}
         transparent={true}
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: { color: "#FFF", fontSize: 13, fontWeight: "500" },
   
-  // Tab styles
+  
   tabBar: {
     flexDirection: "row",
     backgroundColor: "#FFF",
@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   
-  // Member Card styles
+  
   memberCard: {
     backgroundColor: "#FFF",
     borderRadius: 15,
@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
   },
   removeText: { color: "#E74C3C", fontSize: 12, fontWeight: "600" },
   
-  // Form styles
+  
   formCard: {
     backgroundColor: "#FFF",
     borderRadius: 15,
@@ -531,7 +531,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   
-  // Info Card styles
+  
   infoCard: {
     backgroundColor: "#FFF",
     borderRadius: 15,

@@ -1,9 +1,9 @@
-// Member 13: BlastItem Lead
-/**
- * @description Standardized card for displaying blast data
- * @param {Object} blast - The blast object containing title, status, targetArea, etc.
- * @param {Function} onPress - Callback when the item is pressed
- */
+
+
+
+
+
+
 import { useTheme } from "../utils/theme";
 
 import React from "react";
@@ -15,13 +15,13 @@ const BlastItem = ({ blast, onPress }) => {
   const isScheduled = blast.status === "Scheduled";
   const statusColor = isScheduled ? "#FF9900" : "#2ECC71";
 
-  // Step 5: Formatting production timestamps
+  
   const isNew =
     Math.floor(
       (Date.now() - new Date(blast.createdAt).getTime()) / (1000 * 60 * 60),
     ) < 24;
 
-  // Get icon based on blast type
+  
   const getBlastIcon = () => {
     if (blast?.blastSize === "Large") return "💥";
     if (blast?.blastSize === "Medium") return "⚡";

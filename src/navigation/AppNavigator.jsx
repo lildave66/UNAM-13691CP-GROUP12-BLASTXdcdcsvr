@@ -1,48 +1,48 @@
-/*
- * File: src\navigation\AppNavigator.jsx
- * Description: Source file for BlastXApp.
- * Added comments to improve readability and explain app behavior.
- */
 
-// Import project dependencies
+
+
+
+
+
+
 import React, { useEffect, useState } from "react";
-// Import project dependencies
+
 import { ActivityIndicator, View } from "react-native";
-// Import project dependencies
+
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-// Import project dependencies
+
 import { doc, getDoc } from "firebase/firestore";
-// Import project dependencies
+
 import { db } from "../utils/firebase";
-// Import project dependencies
+
 import { storage } from "../utils/storage";
 
-// Screens
-// Import project dependencies
+
+
 import HomeScreen from "../screens/HomeScreen";
-// Import project dependencies
+
 import LoginScreen from "../screens/LoginScreen";
-// Import project dependencies
+
 import SignupScreen from "../screens/SignupScreen";
-// Import project dependencies
+
 import ProfileScreen from "../screens/ProfileScreen";
-// Import project dependencies
+
 import SetupScreen from "../screens/SetupScreen";
-// Import project dependencies
+
 import PlanEventScreen from "../screens/PlanEventScreen";
-// Import project dependencies
+
 import BlastHistoryScreen from "../screens/BlastHistoryScreen";
-// Import project dependencies
+
 import RecordBlastResultsScreen from "../screens/RecordBlastResultsScreen";
-// Import project dependencies
+
 import DashboardScreen from "../screens/DashboardScreen";
-// Import project dependencies
+
 import AdminSettingsScreen from "../screens/AdminSettingsScreen";
 
-// Declare a constant or variable
+
 const Stack = createNativeStackNavigator();
 
-// Export a named constant or helper
+
 export const AppNavigator = ({ user }) => {
   const [setupComplete, setSetupComplete] = useState(null);
 
@@ -57,7 +57,7 @@ export const AppNavigator = ({ user }) => {
         return;
       }
 
-      // Don't force refresh here to allow offline start
+      
       const userData = await storage.getUserData();
       const isSetupDone = await storage.isSetupComplete();
 
@@ -76,7 +76,7 @@ export const AppNavigator = ({ user }) => {
             companyData?.registeredBy === user.uid && !isSetupDone;
         } catch (error) {
           console.log("Offline or error during routing check:", error);
-          // If we have companyCode but are offline, assume dashboard is better than forcing setup
+          
           shouldRouteToSetup = false;
         }
       }
@@ -150,5 +150,5 @@ export const AppNavigator = ({ user }) => {
   );
 };
 
-// Export the default component or module
+
 export default AppNavigator;

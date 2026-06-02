@@ -1,10 +1,10 @@
-/*
- * File: src\screens\SignupScreen.jsx
- * Description: Source file for BlastXApp.
- * Added comments to improve readability and explain app behavior.
- */
 
-// Import project dependencies
+
+
+
+
+
+
 import {
   StyleSheet,
   Text,
@@ -18,28 +18,28 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-// Import project dependencies
+
 import React, { useState } from "react";
-// Import project dependencies
+
 import { useNavigation } from "@react-navigation/native";
-// Import project dependencies
+
 import logo from "../utils/assets/images/icon.png";
-// Import project dependencies
+
 import { MINE_ROLES, RBAC, storage } from "../utils/storage";
-// Import project dependencies
+
 import { auth, db } from "../utils/firebase";
-// Import project dependencies
+
 import { createUserWithEmailAndPassword } from "firebase/auth";
-// Import project dependencies
+
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
-// Import project dependencies
+
 import { Input, Button } from "../components";
 
-// Define a function or component using an arrow function
+
 const SignupScreen = () => {
-  // Declare a constant or variable
+  
   const navigation = useNavigation();
-  // Declare a constant or variable
+  
   const [name, setName] = useState("");
   // Declare a constant or variable
   const [email, setEmail] = useState("");
@@ -69,42 +69,42 @@ const SignupScreen = () => {
       return;
     }
 
-    // Control flow statement
+    
     if (password !== confirmPassword) {
       Alert.alert("Error", "Passwords do not match");
       return;
     }
 
     setLoading(true);
-    // Control flow statement
+    
     try {
-      // Declare a constant or variable
+      
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
         password,
       );
-      // Declare a constant or variable
+      
       const user = userCredential.user;
 
-      // Declare a constant or variable
+      
       let finalCode = companyCode.trim().toUpperCase();
-      // Declare a constant or variable
+      
       let isJoining = !!finalCode;
 
-      // If joining, verify code exists
-      // Control flow statement
+      
+      
       if (isJoining) {
-        // Declare a constant or variable
+        
         const companyDoc = await getDoc(doc(db, "companies", finalCode));
-        // Control flow statement
+        
         if (!companyDoc.exists()) {
           throw new Error("Invalid company code. Please check and try again.");
         }
       } else {
-        // Creating new company
+        
         finalCode = generateCode();
-        // Wait for an asynchronous operation
+        
         await setDoc(doc(db, "companies", finalCode), {
           name: "New Mining Operation",
           registeredBy: user.uid,
@@ -113,8 +113,8 @@ const SignupScreen = () => {
         });
       }
 
-      // Create user profile
-      // Wait for an asynchronous operation
+      
+      
       await setDoc(doc(db, "users", user.uid), {
         name,
         email,
@@ -124,8 +124,8 @@ const SignupScreen = () => {
         createdAt: serverTimestamp(),
       });
 
-      // Add to team collection
-      // Wait for an asynchronous operation
+      
+      
       await setDoc(doc(db, "companies", finalCode, "team", user.uid), {
         name,
         email,
@@ -153,7 +153,7 @@ const SignupScreen = () => {
     }
   };
 
-  // Return JSX layout
+  
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -182,7 +182,7 @@ const SignupScreen = () => {
             keyboardType="email-address"
           />
 
-          {/* NEW: Mine Position Selection */}
+          {}
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Your Position in Mine *</Text>
             <View style={styles.positionGrid}>
@@ -256,220 +256,220 @@ const SignupScreen = () => {
   );
 };
 
-// Export the default component or module
+
 export default SignupScreen;
 
-// Declare a constant or variable
+
 const styles = StyleSheet.create({
-  // Style object property
+  
   container: {
-    // Style object property
+    
     flex: 1,
-    // Style object property
+    
     backgroundColor: "#F8F9FA",
   },
-  // Style object property
+  
   scrollContent: {
-    // Style object property
+    
     flexGrow: 1,
-    // Style object property
+    
     paddingHorizontal: 25,
-    // Style object property
+    
     paddingTop: 60,
-    // Style object property
+    
     paddingBottom: 40,
   },
-  // Style object property
+  
   header: {
-    // Style object property
+    
     alignItems: "center",
-    // Style object property
+    
     marginBottom: 30,
   },
-  // Style object property
+  
   logo: {
-    // Style object property
+    
     width: 80,
-    // Style object property
+    
     height: 80,
-    // Style object property
+    
     borderRadius: 15,
-    // Style object property
+    
     marginBottom: 15,
   },
-  // Style object property
+  
   title: {
-    // Style object property
+    
     fontSize: 28,
-    // Style object property
+    
     fontWeight: "bold",
-    // Style object property
+    
     color: "#1A1F3A",
-    // Style object property
+    
     marginBottom: 8,
   },
-  // Style object property
+  
   subtitle: {
-    // Style object property
+    
     fontSize: 16,
-    // Style object property
+    
     color: "#95A5A6",
   },
-  // Style object property
+  
   form: {
-    // Style object property
+    
     width: "100%",
   },
-  // Style object property
+  
   inputContainer: {
-    // Style object property
+    
     marginBottom: 15,
   },
-  // Style object property
+  
   label: {
-    // Style object property
+    
     fontSize: 14,
-    // Style object property
+    
     fontWeight: "600",
-    // Style object property
+    
     color: "#1A1F3A",
-    // Style object property
+    
     marginBottom: 8,
-    // Style object property
+    
     marginLeft: 4,
   },
-  // Style object property
+  
   input: {
-    // Style object property
+    
     backgroundColor: "#FFF",
-    // Style object property
+    
     borderRadius: 12,
-    // Style object property
+    
     padding: 15,
-    // Style object property
+    
     fontSize: 16,
-    // Style object property
+    
     borderWidth: 1,
-    // Style object property
+    
     borderColor: "#E0E0E0",
   },
-  // Style object property
+  
   positionGrid: {
-    // Style object property
+    
     flexDirection: "row",
-    // Style object property
+    
     flexWrap: "wrap",
-    // Style object property
+    
     marginHorizontal: -6,
   },
-  // Style object property
+  
   positionButton: {
-    // Style object property
+    
     backgroundColor: "#FFF",
-    // Style object property
+    
     paddingVertical: 10,
-    // Style object property
+    
     paddingHorizontal: 12,
-    // Style object property
+    
     borderRadius: 10,
-    // Style object property
+    
     borderWidth: 1,
-    // Style object property
+    
     borderColor: "#E0E0E0",
-    // Style object property
+    
     marginBottom: 10,
-    // Style object property
+    
     marginHorizontal: 6,
   },
-  // Style object property
+  
   positionButtonActive: {
-    // Style object property
+    
     backgroundColor: "#FF9900",
-    // Style object property
+    
     borderColor: "#FF9900",
   },
-  // Style object property
+  
   positionText: {
-    // Style object property
+    
     color: "#1A1F3A",
-    // Style object property
+    
     fontSize: 13,
-    // Style object property
+    
     fontWeight: "600",
   },
-  // Style object property
+  
   positionTextActive: {
-    // Style object property
+    
     color: "#FFF",
   },
-  // Style object property
+  
   positionInfo: {
-    // Style object property
+    
     fontSize: 12,
-    // Style object property
+    
     color: "#FF9900",
-    // Style object property
+    
     marginTop: 6,
-    // Style object property
+    
     marginLeft: 4,
-    // Style object property
+    
     fontStyle: "italic",
   },
-  // Style object property
+  
   signupButton: {
-    // Style object property
+    
     backgroundColor: "#FF9900",
-    // Style object property
+    
     borderRadius: 12,
-    // Style object property
+    
     paddingVertical: 18,
-    // Style object property
+    
     alignItems: "center",
-    // Style object property
+    
     marginTop: 15,
-    // Style object property
+    
     shadowColor: "#FF9900",
-    // Style object property
+    
     shadowOffset: { width: 0, height: 4 },
-    // Style object property
+    
     shadowOpacity: 0.3,
-    // Style object property
+    
     shadowRadius: 8,
-    // Style object property
+    
     elevation: 5,
   },
-  // Style object property
+  
   signupButtonText: {
-    // Style object property
+    
     color: "#FFF",
-    // Style object property
+    
     fontSize: 18,
-    // Style object property
+    
     fontWeight: "bold",
   },
-  // Style object property
+  
   footer: {
-    // Style object property
+    
     flexDirection: "row",
-    // Style object property
+    
     justifyContent: "center",
-    // Style object property
+    
     marginTop: 25,
   },
-  // Style object property
+  
   footerText: {
-    // Style object property
+    
     fontSize: 15,
-    // Style object property
+    
     color: "#95A5A6",
   },
-  // Style object property
+  
   loginLink: {
-    // Style object property
+    
     fontSize: 15,
-    // Style object property
+    
     color: "#FF9900",
-    // Style object property
+    
     fontWeight: "bold",
   },
 });

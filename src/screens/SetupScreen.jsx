@@ -1,10 +1,10 @@
-/*
- * File: src\screens\SetupScreen.jsx
- * Description: Source file for BlastXApp.
- * Added comments to improve readability and explain app behavior.
- */
 
-// Import project dependencies
+
+
+
+
+
+
 import {
   StyleSheet,
   Text,
@@ -16,28 +16,28 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-// Import project dependencies
+
 import React, { useState, useEffect } from "react";
-// Import project dependencies
+
 import { useNavigation } from "@react-navigation/native";
-// Import project dependencies
+
 import { storage, RBAC } from "../utils/storage";
-// Import project dependencies
+
 import { db } from "../utils/firebase";
-// Import project dependencies
+
 import { doc, getDoc } from "firebase/firestore";
-// Import project dependencies
+
 import { Input, Button } from "../components";
 
-// Define a function or component using an arrow function
+
 const SetupScreen = () => {
-  // Declare a constant or variable
+  
   const navigation = useNavigation();
-  // Declare a constant or variable
+  
   const [currentStep, setCurrentStep] = useState(1);
-  // Declare a constant or variable
+  
   const [setupData, setSetupData] = useState({
-    // Style object property
+    
     companyName: "",
     // Style object property
     mineType: "",
@@ -91,45 +91,45 @@ const SetupScreen = () => {
     }
   };
 
-  // Define a function or component using an arrow function
+  
   const handleNext = () => {
-    // Control flow statement
+    
     if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
     }
   };
 
-  // Define a function or component using an arrow function
+  
   const handleFinish = async () => {
-    // Control flow statement
+    
     if (!setupData.companyName.trim() || !setupData.mineType.trim()) {
       Alert.alert("Error", "Please fill in company name and mine type");
       return;
     }
 
-    // Control flow statement
+    
     try {
-      // Declare a constant or variable
+      
       const uData = await storage.getUserData();
-      // Control flow statement
+      
       if (uData && uData.companyCode) {
-        // Wait for an asynchronous operation
+        
         await storage.updateCompanyInfo(uData.companyCode, {
-          // Style object property
+          
           name: setupData.companyName,
-          // Style object property
+          
           mineType: setupData.mineType,
-          // Style object property
+          
           location: setupData.location,
-          // Style object property
+          
           mineDepth: setupData.mineDepth,
-          // Style object property
+          
           rbacEnabled: setupData.rbacEnabled,
         });
         navigation.reset({
-          // Style object property
+          
           index: 0,
-          // Style object property
+          
           routes: [{ name: "Dashboard" }],
         });
       } else {
@@ -141,15 +141,15 @@ const SetupScreen = () => {
     }
   };
 
-  // Define a function or component using an arrow function
+  
   const handleBack = () => {
-    // Control flow statement
+    
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
   };
 
-  // Define a function or component using an arrow function
+  
   const handleInputChange = (field, value) => {
     setSetupData((prev) => ({
       ...prev,
@@ -157,13 +157,13 @@ const SetupScreen = () => {
     }));
   };
 
-  // Define a function or component using an arrow function
+  
   const renderStepContent = () => {
-    // Control flow statement
+    
     switch (currentStep) {
-      // Control flow statement
+      
       case 1:
-        // Return JSX layout
+        
         return (
           <View style={styles.stepContent}>
             <Text style={styles.stepTitle}>Welcome to Mine Blast Ops!</Text>
@@ -181,9 +181,9 @@ const SetupScreen = () => {
             </View>
           </View>
         );
-      // Control flow statement
+      
       case 2:
-        // Return JSX layout
+        
         return (
           <View style={styles.stepContent}>
             <Text style={styles.stepTitle}>Mining Operation Details</Text>
@@ -217,9 +217,9 @@ const SetupScreen = () => {
             />
           </View>
         );
-      // Control flow statement
+      
       case 3:
-        // Return JSX layout
+        
         return (
           <View style={styles.stepContent}>
             <Text style={styles.stepTitle}>Access Control Settings</Text>
@@ -278,20 +278,20 @@ const SetupScreen = () => {
             </View>
           </View>
         );
-      // Control flow statement
+      
       default:
-        // Return a value from the function
+        
         return null;
     }
   };
 
-  // Return JSX layout
+  
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
-      {/* Header */}
+      {}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Mine Setup</Text>
         <Pressable
@@ -302,7 +302,7 @@ const SetupScreen = () => {
         </Pressable>
       </View>
 
-      {/* Progress Indicator */}
+      {}
       <View style={styles.progressContainer}>
         {[1, 2, 3].map((step) => (
           <View key={step} style={styles.progressItem}>
@@ -333,12 +333,12 @@ const SetupScreen = () => {
         ))}
       </View>
 
-      {/* Step Content */}
+      {}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {renderStepContent()}
       </ScrollView>
 
-      {/* Navigation Buttons */}
+      {}
       <View style={styles.navigationContainer}>
         {currentStep > 1 && (
           <Button
@@ -358,478 +358,478 @@ const SetupScreen = () => {
   );
 };
 
-// Export the default component or module
+
 export default SetupScreen;
-// Declare a constant or variable
+
 const styles = StyleSheet.create({
-  // Style object property
+  
   container: {
-    // Style object property
+    
     flex: 1,
-    // Style object property
+    
     backgroundColor: "#F8F9FA",
   },
-  // Style object property
+  
   header: {
-    // Style object property
+    
     backgroundColor: "#1A1F3A",
-    // Style object property
+    
     paddingTop: 50,
-    // Style object property
+    
     paddingBottom: 20,
-    // Style object property
+    
     paddingHorizontal: 20,
-    // Style object property
+    
     flexDirection: "row",
-    // Style object property
+    
     justifyContent: "space-between",
-    // Style object property
+    
     alignItems: "center",
   },
-  // Style object property
+  
   headerTitle: {
-    // Style object property
+    
     fontSize: 28,
-    // Style object property
+    
     fontWeight: "bold",
-    // Style object property
+    
     color: "#FFF",
   },
-  // Style object property
+  
   skipButton: {
-    // Style object property
+    
     backgroundColor: "rgba(255,255,255,0.2)",
-    // Style object property
+    
     paddingHorizontal: 12,
-    // Style object property
+    
     paddingVertical: 6,
-    // Style object property
+    
     borderRadius: 15,
   },
-  // Style object property
+  
   skipButtonText: {
-    // Style object property
+    
     color: "#FFF",
-    // Style object property
+    
     fontSize: 14,
   },
-  // Style object property
+  
   progressContainer: {
-    // Style object property
+    
     flexDirection: "row",
-    // Style object property
+    
     justifyContent: "center",
-    // Style object property
+    
     alignItems: "center",
-    // Style object property
+    
     paddingVertical: 20,
-    // Style object property
+    
     paddingHorizontal: 20,
   },
-  // Style object property
+  
   progressItem: {
-    // Style object property
+    
     flexDirection: "row",
-    // Style object property
+    
     alignItems: "center",
   },
-  // Style object property
+  
   progressDot: {
-    // Style object property
+    
     width: 40,
-    // Style object property
+    
     height: 40,
-    // Style object property
+    
     borderRadius: 20,
-    // Style object property
+    
     backgroundColor: "#E0E0E0",
-    // Style object property
+    
     justifyContent: "center",
-    // Style object property
+    
     alignItems: "center",
   },
-  // Style object property
+  
   activeProgressDot: {
-    // Style object property
+    
     backgroundColor: "#FF9900",
   },
-  // Style object property
+  
   progressNumber: {
-    // Style object property
+    
     fontSize: 16,
-    // Style object property
+    
     fontWeight: "bold",
-    // Style object property
+    
     color: "#95A5A6",
   },
-  // Style object property
+  
   activeProgressNumber: {
-    // Style object property
+    
     color: "#FFF",
   },
-  // Style object property
+  
   progressLine: {
-    // Style object property
+    
     width: 30,
-    // Style object property
+    
     height: 2,
-    // Style object property
+    
     backgroundColor: "#E0E0E0",
-    // Style object property
+    
     marginHorizontal: 5,
   },
-  // Style object property
+  
   activeProgressLine: {
-    // Style object property
+    
     backgroundColor: "#FF9900",
   },
-  // Style object property
+  
   content: {
-    // Style object property
+    
     flex: 1,
-    // Style object property
+    
     padding: 20,
   },
-  // Style object property
+  
   stepContent: {
-    // Style object property
+    
     flex: 1,
   },
-  // Style object property
+  
   stepTitle: {
-    // Style object property
+    
     fontSize: 24,
-    // Style object property
+    
     fontWeight: "bold",
-    // Style object property
+    
     color: "#2C3E50",
-    // Style object property
+    
     marginBottom: 10,
   },
-  // Style object property
+  
   stepDescription: {
-    // Style object property
+    
     fontSize: 16,
-    // Style object property
+    
     color: "#95A5A6",
-    // Style object property
+    
     lineHeight: 22,
-    // Style object property
+    
     marginBottom: 30,
   },
-  // Style object property
+  
   welcomeCard: {
-    // Style object property
+    
     backgroundColor: "#FFF",
-    // Style object property
+    
     borderRadius: 15,
-    // Style object property
+    
     padding: 20,
-    // Style object property
+    
     alignItems: "center",
-    // Style object property
+    
     shadowColor: "#000",
-    // Style object property
+    
     shadowOffset: { width: 0, height: 2 },
-    // Style object property
+    
     shadowOpacity: 0.1,
-    // Style object property
+    
     shadowRadius: 3,
-    // Style object property
+    
     elevation: 3,
   },
-  // Style object property
+  
   welcomeIcon: {
-    // Style object property
+    
     fontSize: 48,
-    // Style object property
+    
     marginBottom: 15,
   },
-  // Style object property
+  
   welcomeText: {
-    // Style object property
+    
     fontSize: 16,
-    // Style object property
+    
     color: "#2C3E50",
-    // Style object property
+    
     textAlign: "center",
-    // Style object property
+    
     lineHeight: 22,
   },
-  // Style object property
+  
   inputContainer: {
-    // Style object property
+    
     marginBottom: 20,
   },
-  // Style object property
+  
   inputLabel: {
-    // Style object property
+    
     fontSize: 14,
-    // Style object property
+    
     fontWeight: "600",
-    // Style object property
+    
     color: "#2C3E50",
-    // Style object property
+    
     marginBottom: 8,
   },
-  // Style object property
+  
   textInput: {
-    // Style object property
+    
     backgroundColor: "#FFF",
-    // Style object property
+    
     borderRadius: 10,
-    // Style object property
+    
     padding: 15,
-    // Style object property
+    
     fontSize: 16,
-    // Style object property
+    
     borderWidth: 1,
-    // Style object property
+    
     borderColor: "#E0E0E0",
   },
-  // Style object property
+  
   pickerContainer: {
-    // Style object property
+    
     backgroundColor: "#FFF",
-    // Style object property
+    
     borderRadius: 10,
-    // Style object property
+    
     overflow: "hidden",
-    // Style object property
+    
     borderWidth: 1,
-    // Style object property
+    
     borderColor: "#E0E0E0",
   },
-  // Style object property
+  
   settingCard: {
-    // Style object property
+    
     backgroundColor: "#FFF",
-    // Style object property
+    
     borderRadius: 15,
-    // Style object property
+    
     padding: 20,
-    // Style object property
+    
     marginBottom: 20,
-    // Style object property
+    
     borderWidth: 1,
-    // Style object property
+    
     borderColor: "#E0E0E0",
   },
-  // Style object property
+  
   settingHeader: {
-    // Style object property
+    
     flexDirection: "row",
-    // Style object property
+    
     justifyContent: "space-between",
-    // Style object property
+    
     alignItems: "center",
-    // Style object property
+    
     marginBottom: 15,
   },
-  // Style object property
+  
   settingTitle: {
-    // Style object property
+    
     fontSize: 16,
-    // Style object property
+    
     fontWeight: "bold",
-    // Style object property
+    
     color: "#2C3E50",
   },
-  // Style object property
+  
   settingDescription: {
-    // Style object property
+    
     fontSize: 12,
-    // Style object property
+    
     color: "#95A5A6",
-    // Style object property
+    
     marginTop: 4,
   },
-  // Style object property
+  
   toggleButton: {
-    // Style object property
+    
     backgroundColor: "#E0E0E0",
-    // Style object property
+    
     paddingHorizontal: 12,
-    // Style object property
+    
     paddingVertical: 6,
-    // Style object property
+    
     borderRadius: 15,
   },
-  // Style object property
+  
   toggleButtonActive: {
-    // Style object property
+    
     backgroundColor: "#FF9900",
   },
-  // Style object property
+  
   toggleText: {
-    // Style object property
+    
     fontSize: 12,
-    // Style object property
+    
     fontWeight: "bold",
-    // Style object property
+    
     color: "#95A5A6",
   },
-  // Style object property
+  
   toggleTextActive: {
-    // Style object property
+    
     color: "#FFF",
   },
-  // Style object property
+  
   infoCard: {
-    // Style object property
+    
     backgroundColor: "#FEF5E7",
-    // Style object property
+    
     borderRadius: 10,
-    // Style object property
+    
     padding: 15,
-    // Style object property
+    
     flexDirection: "row",
-    // Style object property
+    
     alignItems: "flex-start",
-    // Style object property
+    
     marginBottom: 20,
-    // Style object property
+    
     borderLeftWidth: 4,
-    // Style object property
+    
     borderLeftColor: "#FF9900",
   },
-  // Style object property
+  
   infoIcon: {
-    // Style object property
+    
     fontSize: 20,
-    // Style object property
+    
     marginRight: 10,
   },
-  // Style object property
+  
   infoText: {
-    // Style object property
+    
     fontSize: 14,
-    // Style object property
+    
     color: "#2C3E50",
-    // Style object property
+    
     lineHeight: 20,
-    // Style object property
+    
     flex: 1,
   },
-  // Style object property
+  
   setupComplete: {
-    // Style object property
+    
     backgroundColor: "#FFF",
-    // Style object property
+    
     borderRadius: 15,
-    // Style object property
+    
     padding: 20,
-    // Style object property
+    
     alignItems: "center",
-    // Style object property
+    
     shadowColor: "#000",
-    // Style object property
+    
     shadowOffset: { width: 0, height: 2 },
-    // Style object property
+    
     shadowOpacity: 0.1,
-    // Style object property
+    
     shadowRadius: 3,
-    // Style object property
+    
     elevation: 3,
-    // Style object property
+    
     borderWidth: 1,
-    // Style object property
+    
     borderColor: "#2ECC71",
   },
-  // Style object property
+  
   completeIcon: {
-    // Style object property
+    
     fontSize: 48,
-    // Style object property
+    
     marginBottom: 15,
   },
-  // Style object property
+  
   completeTitle: {
-    // Style object property
+    
     fontSize: 20,
-    // Style object property
+    
     fontWeight: "bold",
-    // Style object property
+    
     color: "#2C3E50",
-    // Style object property
+    
     marginBottom: 10,
   },
-  // Style object property
+  
   completeText: {
-    // Style object property
+    
     fontSize: 16,
-    // Style object property
+    
     color: "#95A5A6",
-    // Style object property
+    
     textAlign: "center",
-    // Style object property
+    
     lineHeight: 22,
   },
-  // Style object property
+  
   navigationContainer: {
-    // Style object property
+    
     flexDirection: "row",
-    // Style object property
+    
     padding: 20,
-    // Style object property
+    
     gap: 15,
   },
-  // Style object property
+  
   backButton: {
-    // Style object property
+    
     flex: 1,
-    // Style object property
+    
     backgroundColor: "#FFF",
-    // Style object property
+    
     borderRadius: 10,
-    // Style object property
+    
     paddingVertical: 15,
-    // Style object property
+    
     alignItems: "center",
-    // Style object property
+    
     borderWidth: 1,
-    // Style object property
+    
     borderColor: "#E0E0E0",
   },
-  // Style object property
+  
   backButtonText: {
-    // Style object property
+    
     fontSize: 16,
-    // Style object property
+    
     fontWeight: "600",
-    // Style object property
+    
     color: "#2C3E50",
   },
-  // Style object property
+  
   nextButton: {
-    // Style object property
+    
     flex: 2,
-    // Style object property
+    
     backgroundColor: "#FF9900",
-    // Style object property
+    
     borderRadius: 10,
-    // Style object property
+    
     paddingVertical: 15,
-    // Style object property
+    
     alignItems: "center",
   },
-  // Style object property
+  
   finishButton: {
-    // Style object property
+    
     backgroundColor: "#2ECC71",
   },
-  // Style object property
+  
   nextButtonText: {
-    // Style object property
+    
     fontSize: 16,
-    // Style object property
+    
     fontWeight: "bold",
-    // Style object property
+    
     color: "#FFF",
   },
-  // Style object property
+  
   finishButtonText: {
-    // Style object property
+    
     color: "#FFF",
   },
 });

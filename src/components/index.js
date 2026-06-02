@@ -1,10 +1,10 @@
-/*
- * File: src\components\index.js
- * Description: Source file for BlastXApp.
- * Added comments to improve readability and explain app behavior.
- */
 
-// Export module members
+
+
+
+
+
+
 export { default as Button } from "./Button";
 export { default as Spacer } from "./Spacer";
 export { default as ScreenWrapper } from "./ScreenWrapper";
