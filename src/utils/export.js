@@ -2,16 +2,16 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
 
-/**
- * Utility for exporting data to PDF
- */
+
+
+
 export const ExportUtils = {
-  /**
-   * Generates a PDF report for blast operations
-   * @param {Array} blasts - List of blast operations
-   * @param {Object} company - Company information
-   * @param {string} filterStatus - Current filter status
-   */
+  
+
+
+
+
+
   generateBlastReport: async (blasts, company, filterStatus = "All") => {
     try {
       if (!Array.isArray(blasts)) {
@@ -198,10 +198,10 @@ export const ExportUtils = {
         </html>
       `;
 
-      // Generate PDF
+      
       const { uri } = await Print.printToFileAsync({ html: htmlContent });
       
-      // Share PDF
+      
       if (Platform.OS === 'ios') {
         await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
       } else {

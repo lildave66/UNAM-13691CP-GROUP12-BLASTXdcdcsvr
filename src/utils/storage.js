@@ -1,12 +1,12 @@
-/** 
- * Firebase-backed Storage Service (Production)
- * All data is now stored in Firestore with proper authentication and RBAC
- */
+
+
+
+
 
 import { Alert } from "react-native";
-// Import project dependencies
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
-// Import project dependencies
+
 import {
   collection,
   doc,
@@ -22,64 +22,64 @@ import {
   limit,
   serverTimestamp,
 } from "firebase/firestore";
-// Import project dependencies
+
 import { db, auth } from "./firebase";
 
-// Declare a constant or variable
+
 const CACHE_KEYS = {
-  // Style object property
+  
   IS_SETUP_COMPLETE: "blastx_is_setup_complete",
-  // Style object property
+  
   CACHED_USER: "blastx_cache_user",
 };
 
-// ROLE DEFINITIONS
-// Export a named constant or helper
+
+
 export const MINE_ROLES = {
-  // Style object property
+  
   ENGINEER: "Engineer",
-  // Style object property
+  
   SPECIALIST: "Specialist",
-  // Style object property
+  
   ANALYST: "Analyst",
-  // Style object property
+  
   SUPERVISOR: "Supervisor",
-  // Style object property
+  
   MANAGER: "Manager",
-  // Style object property
+  
   TECHNICIAN: "Technician",
 };
 
-// EDITABLE ROLES (can create and edit blast records)
-// Declare a constant or variable
+
+
 const EDITABLE_ROLES = ["Engineer", "Specialist", "Analyst"];
-/**
- * ROLE-BASED ACCESS CONTROL UTILITIES
- */
-// Export a named constant or helper
+
+
+
+
 export const RBAC = {
-  // Style object property
+  
   canEditBlasts: (userRole, isAdmin = false) =>
     isAdmin || EDITABLE_ROLES.includes(userRole),
-  // Style object property
+  
   canCreateBlasts: (userRole, isAdmin = false) =>
     isAdmin || EDITABLE_ROLES.includes(userRole),
-  // Style object property
+  
   canViewAllRecords: (userRole) => true,
-  // Style object property
+  
   isCompanyAdmin: (userId, companyData) => {
     if (!userId || !companyData) return false;
     return userId === companyData.registeredBy;
   },
-  // Style object property
+  
   getUserAccessLevel: (userRole, isAdmin = false) =>
     isAdmin || EDITABLE_ROLES.includes(userRole) ? "EDITOR" : "VIEWER",
 };
 
-// Declare a constant or variable
-const MOCK_MODE = false; // Set to false to use real Firebase
 
-// Mock Data for testing
+const MOCK_MODE = false; 
+
+
 const MOCK_USER = {
   uid: "mock-user-123",
   name: "Lead Miner John",
@@ -198,35 +198,35 @@ const hydrateCompanyDetails = async (userData) => {
   }
 };
 
-// Export a named constant or helper
+
 export const storage = {
-  /**
-   * USER PROFILE METHODS
-   */
+  
+
+
   getUserData: async (forceRefresh = false) => {
     try {
       if (MOCK_MODE) return MOCK_USER;
 
       const currentUser = auth.currentUser;
       if (!currentUser) {
-        // Try to get from cache even if no auth (for offline start)
+        
         const cached = await AsyncStorage.getItem(CACHE_KEYS.CACHED_USER);
         return cached ? JSON.parse(cached) : null;
       }
 
-      // Check cache first
+      
       if (!forceRefresh) {
         const cached = await AsyncStorage.getItem(CACHE_KEYS.CACHED_USER);
         if (cached) {
           const cachedUser = JSON.parse(cached);
-          // Sync in background or later, don't block
+          
           syncUserCanCreateBlasts(cachedUser).catch(console.error);
           hydrateCompanyDetails(cachedUser).catch(console.error);
           return cachedUser;
         }
       }
 
-      // Fetch from Firestore
+      
       const userDocRef = doc(db, "users", currentUser.uid);
       const userSnap = await getDoc(userDocRef);
 
@@ -239,7 +239,7 @@ export const storage = {
       const syncedUserData = await syncUserCanCreateBlasts(userData);
       const hydratedUserData = await hydrateCompanyDetails(syncedUserData);
 
-      // Cache it
+      
       await AsyncStorage.setItem(
         CACHE_KEYS.CACHED_USER,
         JSON.stringify(hydratedUserData),
@@ -248,7 +248,7 @@ export const storage = {
       return hydratedUserData;
     } catch (error) {
       console.error("Error getting user data:", error);
-      // Fallback to cache on error (e.g. offline)
+      
       const cached = await AsyncStorage.getItem(CACHE_KEYS.CACHED_USER);
       return cached ? JSON.parse(cached) : null;
     }
@@ -259,14 +259,14 @@ export const storage = {
       const canCreateBlasts = RBAC.canCreateBlasts(minePosition);
       const userDocRef = doc(db, "users", userId);
       
-      // Update Firestore (will sync when online)
+      
       updateDoc(userDocRef, {
         minePosition,
         canCreateBlasts,
         updatedAt: serverTimestamp(),
       }).catch(err => console.log("Offline: Update user position queued"));
 
-      // Update cache immediately
+      
       const cached = await AsyncStorage.getItem(CACHE_KEYS.CACHED_USER);
       if (cached) {
         const userData = JSON.parse(cached);
@@ -291,13 +291,13 @@ export const storage = {
       if (!currentUser) throw new Error("No authenticated user");
 
       const companyDocRef = doc(db, "companies", companyCode);
-      // Update Firestore (queued if offline)
+      
       updateDoc(companyDocRef, {
         ...details,
         updatedAt: serverTimestamp(),
       }).catch(err => console.log("Offline: Update company info queued"));
 
-      // Update user cache
+      
       const userDocRef = doc(db, "users", currentUser.uid);
       updateDoc(userDocRef, {
         company: details,
@@ -325,9 +325,9 @@ export const storage = {
     }
   },
 
-  /**
-   * COMPANY METHODS
-   */
+  
+
+
   getCompany: async (companyCode) => {
     try {
       if (!companyCode) return null;
@@ -344,9 +344,9 @@ export const storage = {
     }
   },
 
-  /**
-   * BLAST OPERATIONS METHODS
-   */
+  
+
+
   saveBlast: async (blast) => {
     try {
       if (MOCK_MODE) {
@@ -359,7 +359,7 @@ export const storage = {
 
       const currentUser = auth.currentUser;
       if (!currentUser) {
-        // If offline and not logged in, we might still have user data in cache
+        
         const cached = await AsyncStorage.getItem(CACHE_KEYS.CACHED_USER);
         if (!cached) throw new Error("No authenticated user and no cache found.");
       }
@@ -406,7 +406,7 @@ export const storage = {
         updatedAt: serverTimestamp(),
       };
 
-      // addDoc works offline with persistence
+      
       const docRef = await addDoc(blastsRef, newBlastData);
 
       return {
@@ -509,9 +509,9 @@ export const storage = {
     }
   },
 
-  /**
-   * RECENTS & FAVORITES
-   */
+  
+
+
   getRecents: async (companyCode, maxResults = 50) => {
     try {
       return await storage.getBlasts(companyCode, maxResults);
@@ -596,9 +596,9 @@ export const storage = {
     }
   },
 
-  /**
-   * TEAM MANAGEMENT
-   */
+  
+
+
   getTeammates: async (companyCode) => {
     try {
       if (MOCK_MODE) {
@@ -665,9 +665,9 @@ export const storage = {
     }
   },
 
-  /**
-   * COMPANY SETTINGS
-   */
+  
+
+
   getCompanySettings: async (companyCode) => {
     try {
       if (MOCK_MODE) return MOCK_USER.company;
@@ -732,9 +732,9 @@ export const storage = {
     }
   },
 
-  /**
-   * SETUP STATE
-   */
+  
+
+
   isSetupComplete: async () => {
     try {
       const value = await AsyncStorage.getItem(CACHE_KEYS.IS_SETUP_COMPLETE);
@@ -744,9 +744,9 @@ export const storage = {
     }
   },
 
-  /**
-   * CLEANUP
-   */
+  
+
+
   clearAll: async () => {
     try {
       console.log("Mock: Clearing all storage");
