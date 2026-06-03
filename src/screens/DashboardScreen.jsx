@@ -1,10 +1,3 @@
-
-
-
-
-
-
-
 import {
   StyleSheet,
   Text,
@@ -12,6 +5,7 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
+  TextInput,
 } from "react-native";
 
 import React, { useEffect, useState, useCallback } from "react";
@@ -22,17 +16,9 @@ import { storage, RBAC } from "../utils/storage";
 import { ExportUtils } from "../utils/export";
 import { Alert } from "react-native";
 
-import { 
-  FAB, 
-  Card, 
-  EmptyState, 
-  BlastItem, 
-  Badge 
-} from "../components";
-
+import { FAB, Card, EmptyState, BlastItem, Badge } from "../components";
 
 const DashboardScreen = () => {
-
   const navigation = useNavigation();
 
   const [userData, setUserData] = useState(null);
@@ -45,9 +31,9 @@ const DashboardScreen = () => {
   const [exporting, setExporting] = useState(false);
 
   const [canEdit, setCanEdit] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [stats, setStats] = useState({
-
     total: 0,
 
     scheduled: 0,
@@ -57,9 +43,7 @@ const DashboardScreen = () => {
     failed: 0,
   });
 
-
   const [timeLeft, setTimeLeft] = useState({
-
     days: "00",
 
     hours: "00",
@@ -73,25 +57,18 @@ const DashboardScreen = () => {
     }, []),
   );
 
-  
   useEffect(() => {
-
     if (!nextBlast || !nextBlast.launchDate) return;
-
 
     const timer = setInterval(() => {
       calculateTimeLeft();
     }, 1000);
 
-
     return () => clearInterval(timer);
   }, [nextBlast]);
 
-
   const calculateTimeLeft = () => {
-
     if (!nextBlast.launchDate) return;
-
 
     const now = new Date().getTime();
 
@@ -99,12 +76,10 @@ const DashboardScreen = () => {
 
     const difference = target - now;
 
-
     if (difference <= 0) {
       setTimeLeft({ days: "00", hours: "00", mins: "00" });
       return;
     }
-
 
     const d = Math.floor(difference / (1000 * 60 * 60 * 24));
 
@@ -115,7 +90,6 @@ const DashboardScreen = () => {
     const m = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
 
     setTimeLeft({
-
       days: d.toString().padStart(2, "0"),
 
       hours: h.toString().padStart(2, "0"),
@@ -124,32 +98,33 @@ const DashboardScreen = () => {
     });
   };
 
-
   const loadDashboardData = async () => {
     setLoading(true);
 
     const data = await storage.getUserData();
-    const blastData = await storage.getBlasts(data?.companyCode, 10); 
+    const blastData = await storage.getBlasts(data?.companyCode, 10);
 
     setUserData(data);
-
 
     if (data?.companyCode) {
       const companyInfo = await storage.getCompany(data.companyCode);
       if (companyInfo) {
-        setUserData(prev => ({ ...prev, company: companyInfo }));
+        setUserData((prev) => ({ ...prev, company: companyInfo }));
       }
-      
-      const isAdmin = RBAC.isCompanyAdmin(data.uid, companyInfo || data.company);
-      const rbacEnabled = companyInfo?.rbacEnabled ?? data.company?.rbacEnabled ?? true;
-      
-      
-      const canEditBlasts = isAdmin || !rbacEnabled || RBAC.canEditBlasts(data.minePosition);
+
+      const isAdmin = RBAC.isCompanyAdmin(
+        data.uid,
+        companyInfo || data.company,
+      );
+      const rbacEnabled =
+        companyInfo?.rbacEnabled ?? data.company?.rbacEnabled ?? true;
+
+      const canEditBlasts =
+        isAdmin || !rbacEnabled || RBAC.canEditBlasts(data.minePosition);
       setCanEdit(canEditBlasts);
     }
 
     setBlasts(blastData);
-
 
     const scheduled = blastData.filter((b) => b.status === "Scheduled");
 
@@ -160,7 +135,6 @@ const DashboardScreen = () => {
     }
 
     setStats({
-
       total: blastData.length,
 
       scheduled: scheduled.length,
@@ -171,6 +145,33 @@ const DashboardScreen = () => {
     });
     setLoading(false);
   };
+
+  const filteredBlasts = blasts.filter((blast) => {
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) return true;
+    return [blast.title, blast.targetArea, blast.status, blast.blastSize]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .includes(query);
+  });
+
+  const safetyScore = Math.max(
+    0,
+    Math.min(100, 100 - stats.failed * 12 + stats.completed * 4),
+  );
+  const safetyLevel =
+    safetyScore >= 85
+      ? "Excellent"
+      : safetyScore >= 65
+        ? "Stable"
+        : "Needs review";
+  const recommendedAction =
+    stats.failed > 0
+      ? "Review failed blasts before the next schedule."
+      : stats.scheduled > 0
+        ? "Confirm schedule and field readiness for the next blast."
+        : "Start by creating your first blast plan.";
 
   const handleExport = async () => {
     if (blasts.length === 0) {
@@ -183,41 +184,38 @@ const DashboardScreen = () => {
       await ExportUtils.generateBlastReport(
         blasts,
         userData?.company,
-        "Recent Operations"
+        "Recent Operations",
       );
     } catch (error) {
       console.error("Export failed", error);
-      Alert.alert("Export Failed", "Could not generate PDF report. Please try again.");
+      Alert.alert(
+        "Export Failed",
+        "Could not generate PDF report. Please try again.",
+      );
     } finally {
       setExporting(false);
     }
   };
 
-
   const formatDate = (dateString) => {
-
     if (!dateString) return "N/A";
 
     const date = new Date(dateString);
 
     return date.toLocaleDateString(undefined, {
-
       month: "short",
 
       day: "numeric",
     });
   };
 
-
   if (loading && !userData) {
-
     return (
       <View style={[styles.container, { justifyContent: "center" }]}>
         <ActivityIndicator size="large" color="#FF9900" />
       </View>
     );
   }
-
 
   return (
     <View style={styles.container}>
@@ -242,9 +240,7 @@ const DashboardScreen = () => {
         {}
         {nextBlast ? (
           <Card style={styles.timerCard}>
-            <Text style={styles.timerLabel}>
-              NEXT BLAST: {nextBlast.title}
-            </Text>
+            <Text style={styles.timerLabel}>NEXT BLAST: {nextBlast.title}</Text>
             <View style={styles.blastDetails}>
               <Text style={styles.blastDetailsText}>
                 📍 {nextBlast.targetArea}
@@ -281,15 +277,23 @@ const DashboardScreen = () => {
             </View>
           </Card>
         ) : (
-          <EmptyState 
-            icon="⏲️" 
-            title="No Active Blast Timers" 
+          <EmptyState
+            icon="⏲️"
+            title="No Active Blast Timers"
             message="Schedule a blast operation to begin countdown"
             style={styles.emptyTimerCard}
           />
         )}
 
         {}
+        <Card style={styles.insightCard}>
+          <Text style={styles.insightLabel}>Smart Safety Overview</Text>
+          <Text style={styles.insightTitle}>
+            Safety score: {safetyScore}% · {safetyLevel}
+          </Text>
+          <Text style={styles.insightText}>{recommendedAction}</Text>
+        </Card>
+
         <View style={styles.statsContainer}>
           <Card style={[styles.statCard, { backgroundColor: "#FF9900" }]}>
             <Text style={styles.statNumber}>{stats.scheduled}</Text>
@@ -350,8 +354,8 @@ const DashboardScreen = () => {
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>📋 Recent Blast Operations</Text>
-            <Pressable 
-              onPress={handleExport} 
+            <Pressable
+              onPress={handleExport}
               disabled={exporting}
               style={styles.inlineExportButton}
             >
@@ -362,17 +366,29 @@ const DashboardScreen = () => {
               )}
             </Pressable>
           </View>
-          {blasts.length === 0 ? (
-            <EmptyState 
-              title="No blast operations recorded yet." 
+          <Text style={styles.helperText}>
+            Search by title, area, or status
+          </Text>
+          <TextInput
+            style={styles.searchInput}
+            value={searchTerm}
+            onChangeText={setSearchTerm}
+            placeholder="Search blasts"
+            placeholderTextColor="#95A5A6"
+          />
+          {filteredBlasts.length === 0 ? (
+            <EmptyState
+              title="No blast operations recorded yet."
               style={styles.emptyState}
             />
           ) : (
-            blasts.map((blast) => (
-              <BlastItem 
-                key={blast.id} 
-                blast={blast} 
-                onPress={() => navigation.navigate("RecordBlastResults", { blast })}
+            filteredBlasts.map((blast) => (
+              <BlastItem
+                key={blast.id}
+                blast={blast}
+                onPress={() =>
+                  navigation.navigate("RecordBlastResults", { blast })
+                }
               />
             ))
           )}
@@ -384,16 +400,12 @@ const DashboardScreen = () => {
   );
 };
 
-
 export default DashboardScreen;
 
-
 const styles = StyleSheet.create({
-
   container: { flex: 1, backgroundColor: "#F8F9FA" },
 
   header: {
-
     backgroundColor: "#1A1F3A",
 
     paddingTop: 50,
@@ -411,10 +423,14 @@ const styles = StyleSheet.create({
 
   headerTitle: { fontSize: 22, fontWeight: "bold", color: "#FF9900", flex: 1 },
 
-  headerSubtitle: { fontSize: 13, color: "#FFF", marginTop: 2, fontWeight: "500" },
+  headerSubtitle: {
+    fontSize: 13,
+    color: "#FFF",
+    marginTop: 2,
+    fontWeight: "500",
+  },
 
   profileIcon: {
-
     backgroundColor: "rgba(255,255,255,0.1)",
 
     padding: 8,
@@ -427,7 +443,6 @@ const styles = StyleSheet.create({
   content: { flex: 1, padding: 15 },
 
   timerCard: {
-
     backgroundColor: "#1A1F3A",
 
     borderRadius: 20,
@@ -450,7 +465,6 @@ const styles = StyleSheet.create({
   },
 
   timerLabel: {
-
     color: "#FF9900",
 
     fontWeight: "bold",
@@ -463,7 +477,6 @@ const styles = StyleSheet.create({
   },
 
   blastDetails: {
-
     flexDirection: "row",
 
     justifyContent: "space-around",
@@ -482,7 +495,6 @@ const styles = StyleSheet.create({
   },
 
   blastDetailsText: {
-
     color: "#FFB84D",
 
     fontSize: 12,
@@ -499,7 +511,6 @@ const styles = StyleSheet.create({
   timeUnit: { color: "#95A5A6", fontSize: 10, marginTop: -5 },
 
   timeDivider: {
-
     color: "#FFF",
 
     fontSize: 24,
@@ -527,7 +538,6 @@ const styles = StyleSheet.create({
   },
 
   emptyTimerCard: {
-
     padding: 30,
 
     backgroundColor: "#FFF",
@@ -546,7 +556,6 @@ const styles = StyleSheet.create({
   emptyTimerText: { fontSize: 16, fontWeight: "bold", color: "#2C3E50" },
 
   emptyTimerSub: {
-
     fontSize: 12,
 
     color: "#95A5A6",
@@ -556,10 +565,28 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
+  insightCard: {
+    backgroundColor: "#1A1F3A",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+  },
+  insightLabel: {
+    color: "#FFB84D",
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  insightTitle: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "bold",
+    marginTop: 4,
+  },
+  insightText: { color: "#E5E7EB", fontSize: 13, marginTop: 6, lineHeight: 18 },
   statsContainer: { flexDirection: "row", gap: 12, marginBottom: 20 },
 
   statCard: {
-
     flex: 1,
 
     borderRadius: 15,
@@ -577,8 +604,18 @@ const styles = StyleSheet.create({
 
   section: { marginBottom: 20 },
 
+  helperText: { color: "#95A5A6", fontSize: 11 },
+  searchInput: {
+    borderWidth: 1,
+    borderColor: "#ECEFF1",
+    borderRadius: 12,
+    backgroundColor: "#FFF",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12,
+    color: "#1A1F3A",
+  },
   sectionTitle: {
-
     fontSize: 16,
 
     fontWeight: "bold",
@@ -606,7 +643,6 @@ const styles = StyleSheet.create({
   },
 
   actionButton: {
-
     flexDirection: "row",
 
     borderRadius: 12,
@@ -621,26 +657,22 @@ const styles = StyleSheet.create({
   },
 
   buttonRow: {
-
     flexDirection: "row",
 
     gap: 10,
   },
 
   readOnlyButtonRow: {
-
     gap: 10,
   },
 
   actionButtonHalf: {
-
     flex: 1,
 
     marginBottom: 0,
   },
 
   readOnlyNote: {
-
     fontSize: 11,
 
     color: "#FF9900",
@@ -655,7 +687,6 @@ const styles = StyleSheet.create({
   actionButtonIcon: { fontSize: 20 },
 
   historyItem: {
-
     flexDirection: "row",
 
     backgroundColor: "#FFF",
@@ -676,7 +707,6 @@ const styles = StyleSheet.create({
   },
 
   historyStatus: {
-
     width: 35,
 
     height: 35,
@@ -697,7 +727,6 @@ const styles = StyleSheet.create({
   historyTime: { fontSize: 11, color: "#95A5A6", marginTop: 1 },
 
   badge: {
-
     backgroundColor: "#F8F9FA",
 
     paddingHorizontal: 8,

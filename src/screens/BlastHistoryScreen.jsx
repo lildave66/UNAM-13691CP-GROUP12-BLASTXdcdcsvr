@@ -1,10 +1,3 @@
-
-
-
-
-
-
-
 import {
   StyleSheet,
   Text,
@@ -13,6 +6,7 @@ import {
   Pressable,
   ActivityIndicator,
   Alert,
+  TextInput,
 } from "react-native";
 
 import React, { useEffect, useState, useCallback } from "react";
@@ -22,16 +16,9 @@ import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { storage } from "../utils/storage";
 import { ExportUtils } from "../utils/export";
 
-import { 
-  FAB, 
-  Card, 
-  EmptyState, 
-  BlastItem 
-} from "../components";
-
+import { FAB, Card, EmptyState, BlastItem } from "../components";
 
 const BlastHistoryScreen = () => {
-
   const navigation = useNavigation();
 
   const [blasts, setBlasts] = useState([]);
@@ -40,7 +27,8 @@ const BlastHistoryScreen = () => {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
 
-  const [filterStatus, setFilterStatus] = useState("All"); 
+  const [filterStatus, setFilterStatus] = useState("All");
+  const [searchTerm, setSearchTerm] = useState("");
 
   useFocusEffect(
     useCallback(() => {
@@ -48,13 +36,12 @@ const BlastHistoryScreen = () => {
     }, []),
   );
 
-
   const loadBlastHistory = async () => {
     setLoading(true);
     try {
       const data = await storage.getUserData();
       setUserData(data);
-      const allBlasts = await storage.getBlasts(data?.companyCode, 100); 
+      const allBlasts = await storage.getBlasts(data?.companyCode, 100);
       setBlasts(allBlasts);
     } catch (error) {
       console.error("Error loading blast history", error);
@@ -66,7 +53,10 @@ const BlastHistoryScreen = () => {
 
   const handleExport = async () => {
     if (getFilteredBlasts().length === 0) {
-      Alert.alert("No Data", "There are no blast operations to export with the current filter.");
+      Alert.alert(
+        "No Data",
+        "There are no blast operations to export with the current filter.",
+      );
       return;
     }
 
@@ -75,58 +65,60 @@ const BlastHistoryScreen = () => {
       await ExportUtils.generateBlastReport(
         getFilteredBlasts(),
         userData?.company,
-        filterStatus
+        filterStatus,
       );
     } catch (error) {
       console.error("Export failed", error);
-      Alert.alert("Export Failed", "Could not generate PDF report. Please try again.");
+      Alert.alert(
+        "Export Failed",
+        "Could not generate PDF report. Please try again.",
+      );
     } finally {
       setExporting(false);
     }
   };
 
-
   const getFilteredBlasts = () => {
+    const lower = searchTerm.trim().toLowerCase();
+    const byStatus =
+      filterStatus === "All"
+        ? blasts
+        : blasts.filter((b) => b.status === filterStatus);
 
-    if (filterStatus === "All") return blasts;
+    if (!lower) return byStatus;
 
-    return blasts.filter((b) => b.status === filterStatus);
+    return byStatus.filter((b) =>
+      [b.title, b.targetArea, b.status, b.blastSize, b.description]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(lower),
+    );
   };
 
-
   const getStatusColor = (status) => {
-
     switch (status) {
-
       case "Scheduled":
-
         return "#FF9900";
 
       case "Completed":
-
         return "#27AE60";
 
       case "Failed":
-
         return "#E74C3C";
 
       default:
-
         return "#95A5A6";
     }
   };
 
-
   const formatDate = (dateString) => {
-
     if (!dateString) return "N/A";
 
     try {
-
       const date = new Date(dateString.replace(" ", "T"));
 
       return date.toLocaleDateString(undefined, {
-
         month: "short",
 
         day: "numeric",
@@ -136,11 +128,9 @@ const BlastHistoryScreen = () => {
         minute: "2-digit",
       });
     } catch {
-
       return dateString;
     }
   };
-
 
   const renderBlastItem = ({ item }) => (
     <Pressable
@@ -183,7 +173,6 @@ const BlastHistoryScreen = () => {
       </View>
 
       <Text style={styles.launchDate}>
-
         Launch: {formatDate(item.launchDate)}
       </Text>
 
@@ -192,7 +181,6 @@ const BlastHistoryScreen = () => {
           style={styles.recordButton}
           onPress={() =>
             navigation.navigate("RecordBlastResults", {
-
               blastId: item.id,
 
               blast: item,
@@ -205,19 +193,15 @@ const BlastHistoryScreen = () => {
     </Pressable>
   );
 
-
   const filteredBlasts = getFilteredBlasts();
 
-
   if (loading) {
-
     return (
       <View style={[styles.container, { justifyContent: "center" }]}>
         <ActivityIndicator size="large" color="#FF9900" />
       </View>
     );
   }
-
 
   return (
     <View style={styles.container}>
@@ -227,8 +211,8 @@ const BlastHistoryScreen = () => {
           <Text style={styles.backButton}>← Back</Text>
         </Pressable>
         <Text style={styles.headerTitle}>Blast Operations Log</Text>
-        <Pressable 
-          onPress={handleExport} 
+        <Pressable
+          onPress={handleExport}
           disabled={exporting}
           style={styles.exportButton}
         >
@@ -242,6 +226,13 @@ const BlastHistoryScreen = () => {
 
       {}
       <View style={styles.filterContainer}>
+        <TextInput
+          style={styles.searchInput}
+          value={searchTerm}
+          onChangeText={setSearchTerm}
+          placeholder="Search by title, area, or status"
+          placeholderTextColor="#95A5A6"
+        />
         {["All", "Scheduled", "Completed", "Failed"].map((status) => (
           <Pressable
             key={status}
@@ -270,7 +261,9 @@ const BlastHistoryScreen = () => {
           renderItem={({ item }) => (
             <BlastItem
               blast={item}
-              onPress={() => navigation.navigate("RecordBlastResults", { blast: item })}
+              onPress={() =>
+                navigation.navigate("RecordBlastResults", { blast: item })
+              }
             />
           )}
           keyExtractor={(item) => item.id}
@@ -289,21 +282,16 @@ const BlastHistoryScreen = () => {
   );
 };
 
-
 export default BlastHistoryScreen;
 
-
 const styles = StyleSheet.create({
-
   container: {
-
     flex: 1,
 
     backgroundColor: "#F8F9FA",
   },
 
   header: {
-
     flexDirection: "row",
 
     justifyContent: "space-between",
@@ -324,7 +312,6 @@ const styles = StyleSheet.create({
   },
 
   backButton: {
-
     color: "#FF9900",
 
     fontSize: 16,
@@ -333,7 +320,6 @@ const styles = StyleSheet.create({
   },
 
   headerTitle: {
-
     fontSize: 18,
 
     fontWeight: "bold",
@@ -355,9 +341,6 @@ const styles = StyleSheet.create({
   },
 
   filterContainer: {
-
-    flexDirection: "row",
-
     paddingHorizontal: 15,
 
     paddingVertical: 12,
@@ -369,8 +352,17 @@ const styles = StyleSheet.create({
     borderBottomColor: "#ECEFF1",
   },
 
+  searchInput: {
+    borderWidth: 1,
+    borderColor: "#ECEFF1",
+    borderRadius: 12,
+    backgroundColor: "#F8F9FA",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 10,
+    color: "#1A1F3A",
+  },
   filterButton: {
-
     paddingHorizontal: 12,
 
     paddingVertical: 6,
@@ -380,15 +372,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#F0F0F0",
 
     marginRight: 8,
+    marginBottom: 6,
   },
 
   filterButtonActive: {
-
     backgroundColor: "#FF9900",
   },
 
   filterButtonText: {
-
     color: "#666",
 
     fontSize: 12,
@@ -397,19 +388,16 @@ const styles = StyleSheet.create({
   },
 
   filterButtonTextActive: {
-
     color: "#FFF",
   },
 
   listContent: {
-
     paddingHorizontal: 15,
 
     paddingVertical: 10,
   },
 
   blastCard: {
-
     backgroundColor: "#FFF",
 
     borderRadius: 12,
@@ -434,12 +422,10 @@ const styles = StyleSheet.create({
   },
 
   blastHeader: {
-
     marginBottom: 10,
   },
 
   blastTitleContainer: {
-
     flexDirection: "row",
 
     justifyContent: "space-between",
@@ -448,7 +434,6 @@ const styles = StyleSheet.create({
   },
 
   blastTitle: {
-
     fontSize: 16,
 
     fontWeight: "bold",
@@ -459,7 +444,6 @@ const styles = StyleSheet.create({
   },
 
   statusBadge: {
-
     paddingHorizontal: 10,
 
     paddingVertical: 4,
@@ -470,7 +454,6 @@ const styles = StyleSheet.create({
   },
 
   statusText: {
-
     color: "#FFF",
 
     fontSize: 11,
@@ -479,7 +462,6 @@ const styles = StyleSheet.create({
   },
 
   blastDescription: {
-
     color: "#666",
 
     fontSize: 13,
@@ -490,7 +472,6 @@ const styles = StyleSheet.create({
   },
 
   blastDetails: {
-
     flexDirection: "row",
 
     justifyContent: "space-between",
@@ -505,14 +486,12 @@ const styles = StyleSheet.create({
   },
 
   detailItem: {
-
     alignItems: "center",
 
     flex: 1,
   },
 
   detailLabel: {
-
     fontSize: 11,
 
     color: "#95A5A6",
@@ -523,7 +502,6 @@ const styles = StyleSheet.create({
   },
 
   detailValue: {
-
     fontSize: 14,
 
     fontWeight: "bold",
@@ -532,7 +510,6 @@ const styles = StyleSheet.create({
   },
 
   launchDate: {
-
     fontSize: 12,
 
     color: "#95A5A6",
@@ -541,7 +518,6 @@ const styles = StyleSheet.create({
   },
 
   recordButton: {
-
     backgroundColor: "#FF9900",
 
     borderRadius: 8,
@@ -554,7 +530,6 @@ const styles = StyleSheet.create({
   },
 
   recordButtonText: {
-
     color: "#FFF",
 
     fontSize: 13,
@@ -563,7 +538,6 @@ const styles = StyleSheet.create({
   },
 
   emptyState: {
-
     flex: 1,
 
     justifyContent: "center",
@@ -572,7 +546,6 @@ const styles = StyleSheet.create({
   },
 
   emptyStateText: {
-
     fontSize: 16,
 
     fontWeight: "bold",
@@ -583,7 +556,6 @@ const styles = StyleSheet.create({
   },
 
   emptyStateSubtext: {
-
     fontSize: 13,
 
     color: "#95A5A6",
