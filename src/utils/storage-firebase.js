@@ -1,8 +1,3 @@
-
-
-
-
-
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import {
@@ -23,18 +18,13 @@ import {
 
 import { db, auth, authHelpers } from "./firebase";
 
-
 const CACHE_KEYS = {
-
   IS_SETUP_COMPLETE: "blastx_is_setup_complete",
 
   CACHED_USER: "blastx_cache_user",
 };
 
-
-
 export const MINE_ROLES = {
-
   ENGINEER: "Engineer",
 
   SPECIALIST: "Specialist",
@@ -48,39 +38,26 @@ export const MINE_ROLES = {
   TECHNICIAN: "Technician",
 };
 
-
-
 const EDITABLE_ROLES = ["Engineer", "Specialist", "Analyst"];
 
-
-
-
 export const RBAC = {
+  canEditBlasts: (userRole, isAdmin = false) =>
+    isAdmin || EDITABLE_ROLES.includes(userRole),
 
-  canEditBlasts: (userRole, isAdmin = false) => isAdmin || EDITABLE_ROLES.includes(userRole),
-
-  canCreateBlasts: (userRole, isAdmin = false) => isAdmin || EDITABLE_ROLES.includes(userRole),
+  canCreateBlasts: (userRole, isAdmin = false) =>
+    isAdmin || EDITABLE_ROLES.includes(userRole),
 
   canViewAllRecords: (userRole) => true,
 
   isCompanyAdmin: (userId, companyData) => userId === companyData?.registeredBy,
 
   getUserAccessLevel: (userRole, isAdmin = false) =>
-    (isAdmin || EDITABLE_ROLES.includes(userRole)) ? "EDITOR" : "VIEWER",
+    isAdmin || EDITABLE_ROLES.includes(userRole) ? "EDITOR" : "VIEWER",
 };
 
-
-
-
 export const storage = {
-  
-
-
-
   getUserData: async (forceRefresh = false) => {
-
     try {
-
       const currentUser = auth.currentUser;
 
       if (!currentUser) {
@@ -89,21 +66,15 @@ export const storage = {
         return null;
       }
 
-      
-
       if (!forceRefresh) {
-
         const cached = await AsyncStorage.getItem(CACHE_KEYS.CACHED_USER);
 
         if (cached) return JSON.parse(cached);
       }
 
-      
-
       const userDocRef = doc(db, "users", currentUser.uid);
 
       const userSnap = await getDoc(userDocRef);
-
 
       if (!userSnap.exists()) {
         console.warn("User document not found in Firestore");
@@ -111,13 +82,12 @@ export const storage = {
         return null;
       }
 
-
       const userData = { uid: currentUser.uid, ...userSnap.data() };
 
-      
-
-      await AsyncStorage.setItem(CACHE_KEYS.CACHED_USER, JSON.stringify(userData));
-
+      await AsyncStorage.setItem(
+        CACHE_KEYS.CACHED_USER,
+        JSON.stringify(userData),
+      );
 
       return userData;
     } catch (error) {
@@ -127,40 +97,50 @@ export const storage = {
     }
   },
 
-
   updateUserPosition: async (userId, minePosition) => {
-
     try {
-
       const userDocRef = doc(db, "users", userId);
       const userSnap = await getDoc(userDocRef);
       const userData = userSnap.exists() ? userSnap.data() : {};
-      
-      
+      const companyCode =
+        userData.companyCode || userData.company?.code || null;
+
       const isAdmin = userId === userData.company?.registeredBy;
       const canCreateBlasts = isAdmin || EDITABLE_ROLES.includes(minePosition);
-
 
       await updateDoc(userDocRef, {
         minePosition,
         canCreateBlasts,
-
         updatedAt: serverTimestamp(),
       });
 
-      
+      if (companyCode) {
+        const teammateDocRef = doc(
+          db,
+          "companies",
+          companyCode,
+          "team",
+          userId,
+        );
+        await updateDoc(teammateDocRef, {
+          minePosition,
+          canCreateBlasts,
+          updatedAt: serverTimestamp(),
+        });
+      }
 
       const cached = await AsyncStorage.getItem(CACHE_KEYS.CACHED_USER);
 
       if (cached) {
-
         const cachedData = JSON.parse(cached);
         cachedData.minePosition = minePosition;
         cachedData.canCreateBlasts = canCreateBlasts;
 
-        await AsyncStorage.setItem(CACHE_KEYS.CACHED_USER, JSON.stringify(cachedData));
+        await AsyncStorage.setItem(
+          CACHE_KEYS.CACHED_USER,
+          JSON.stringify(cachedData),
+        );
       }
-
 
       return true;
     } catch (error) {
@@ -170,15 +150,11 @@ export const storage = {
     }
   },
 
-
   updateCompanyInfo: async (companyCode, details) => {
-
     try {
-
       const currentUser = auth.currentUser;
 
       if (!currentUser) throw new Error("No authenticated user");
-
 
       const companyDocRef = doc(db, "companies", companyCode);
 
@@ -188,20 +164,15 @@ export const storage = {
         updatedAt: serverTimestamp(),
       });
 
-      
-
       const userDocRef = doc(db, "users", currentUser.uid);
 
       await updateDoc(userDocRef, {
-
         company: details,
 
         updatedAt: serverTimestamp(),
       });
 
-
       await AsyncStorage.setItem(CACHE_KEYS.IS_SETUP_COMPLETE, "true");
-
 
       return true;
     } catch (error) {
@@ -211,31 +182,17 @@ export const storage = {
     }
   },
 
-  
-
-
-
   saveBlast: async (blast) => {
-
     try {
-
       const currentUser = auth.currentUser;
 
       if (!currentUser) throw new Error("No authenticated user");
-
 
       const companyCode = blast.companyCode;
 
       if (!companyCode) throw new Error("Company code required");
 
-
-      const blastsRef = collection(
-        db,
-        "companies",
-        companyCode,
-        "blasts"
-      );
-
+      const blastsRef = collection(db, "companies", companyCode, "blasts");
 
       const newBlastData = {
         ...blast,
@@ -247,12 +204,9 @@ export const storage = {
         updatedAt: serverTimestamp(),
       };
 
-
       const docRef = await addDoc(blastsRef, newBlastData);
 
-
       return {
-
         id: docRef.id,
         ...newBlastData,
       };
@@ -263,28 +217,17 @@ export const storage = {
     }
   },
 
-
   getBlasts: async (companyCode, maxResults = 20) => {
-
     try {
-
       if (!companyCode) throw new Error("Company code required");
 
-
-      const blastsRef = collection(
-        db,
-        "companies",
-        companyCode,
-        "blasts"
-      );
-
+      const blastsRef = collection(db, "companies", companyCode, "blasts");
 
       const q = query(
         blastsRef,
         orderBy("createdAt", "desc"),
-        limit(maxResults)
+        limit(maxResults),
       );
-
 
       const querySnapshot = await getDocs(q);
 
@@ -292,12 +235,10 @@ export const storage = {
 
       querySnapshot.forEach((doc) => {
         blasts.push({
-
           id: doc.id,
           ...doc.data(),
         });
       });
-
 
       return blasts;
     } catch (error) {
@@ -307,30 +248,17 @@ export const storage = {
     }
   },
 
-
   getBlastById: async (companyCode, blastId) => {
-
     try {
-
-      const blastDocRef = doc(
-        db,
-        "companies",
-        companyCode,
-        "blasts",
-        blastId
-      );
+      const blastDocRef = doc(db, "companies", companyCode, "blasts", blastId);
 
       const blastSnap = await getDoc(blastDocRef);
 
-
       if (!blastSnap.exists()) {
-
         return null;
       }
 
-
       return {
-
         id: blastSnap.id,
         ...blastSnap.data(),
       };
@@ -341,23 +269,11 @@ export const storage = {
     }
   },
 
-
-  recordBlastResults: async (companyCode, blastId, resultData) => {
-
-  },
-
+  recordBlastResults: async (companyCode, blastId, resultData) => {},
 
   deleteBlast: async (companyCode, blastId) => {
-
     try {
-
-      const blastDocRef = doc(
-        db,
-        "companies",
-        companyCode,
-        "blasts",
-        blastId
-      );
+      const blastDocRef = doc(db, "companies", companyCode, "blasts", blastId);
 
       await deleteDoc(blastDocRef);
 
@@ -369,21 +285,13 @@ export const storage = {
     }
   },
 
-  
-
-
-
   getCompany: async (companyCode) => {
-
     try {
-
       const companyDocRef = doc(db, "companies", companyCode);
 
       const companySnap = await getDoc(companyDocRef);
 
-
       if (companySnap.exists()) {
-
         return { code: companyCode, ...companySnap.data() };
       }
 
@@ -395,14 +303,8 @@ export const storage = {
     }
   },
 
-  
-
-
-
   getRecents: async (companyCode, maxResults = 50) => {
-
     try {
-
       return await storage.getBlasts(companyCode, maxResults);
     } catch (error) {
       console.error("Error getting recents:", error);
@@ -411,29 +313,20 @@ export const storage = {
     }
   },
 
-
   getFavorites: async (companyCode) => {
-
     try {
-
       const currentUser = auth.currentUser;
 
       if (!currentUser) return [];
-
 
       const favoritesRef = collection(
         db,
         "companies",
         companyCode,
-        "favorites"
+        "favorites",
       );
 
-
-      const q = query(
-        favoritesRef,
-        where("userId", "==", currentUser.uid)
-      );
-
+      const q = query(favoritesRef, where("userId", "==", currentUser.uid));
 
       const querySnapshot = await getDocs(q);
 
@@ -441,12 +334,10 @@ export const storage = {
 
       querySnapshot.forEach((doc) => {
         favorites.push({
-
           id: doc.id,
           ...doc.data(),
         });
       });
-
 
       return favorites;
     } catch (error) {
@@ -456,32 +347,25 @@ export const storage = {
     }
   },
 
-
   addFavorite: async (companyCode, blastId) => {
-
     try {
-
       const currentUser = auth.currentUser;
 
       if (!currentUser) throw new Error("No authenticated user");
-
 
       const favoritesRef = collection(
         db,
         "companies",
         companyCode,
-        "favorites"
+        "favorites",
       );
 
-
       await addDoc(favoritesRef, {
-
         userId: currentUser.uid,
         blastId,
 
         addedAt: serverTimestamp(),
       });
-
 
       return true;
     } catch (error) {
@@ -491,22 +375,17 @@ export const storage = {
     }
   },
 
-
   removeFavorite: async (companyCode, favoriteId) => {
-
     try {
-
       const favoriteDocRef = doc(
         db,
         "companies",
         companyCode,
         "favorites",
-        favoriteId
+        favoriteId,
       );
 
-
       await deleteDoc(favoriteDocRef);
-
 
       return true;
     } catch (error) {
@@ -516,21 +395,9 @@ export const storage = {
     }
   },
 
-  
-
-
-
   getTeammates: async (companyCode) => {
-
     try {
-
-      const teamRef = collection(
-        db,
-        "companies",
-        companyCode,
-        "team"
-      );
-
+      const teamRef = collection(db, "companies", companyCode, "team");
 
       const querySnapshot = await getDocs(teamRef);
 
@@ -538,12 +405,10 @@ export const storage = {
 
       querySnapshot.forEach((doc) => {
         teammates.push({
-
           uid: doc.id,
           ...doc.data(),
         });
       });
-
 
       return teammates;
     } catch (error) {
@@ -553,31 +418,18 @@ export const storage = {
     }
   },
 
-
   removeTeammate: async (companyCode, userId) => {
-
     try {
-
-      const teammateDocRef = doc(
-        db,
-        "companies",
-        companyCode,
-        "team",
-        userId
-      );
+      const teammateDocRef = doc(db, "companies", companyCode, "team", userId);
 
       await deleteDoc(teammateDocRef);
-
-      
 
       const userDocRef = doc(db, "users", userId);
 
       const userSnap = await getDoc(userDocRef);
 
       if (userSnap.exists() && userSnap.data().companyCode === companyCode) {
-
         await updateDoc(userDocRef, {
-
           companyCode: null,
 
           company: null,
@@ -585,7 +437,6 @@ export const storage = {
           updatedAt: serverTimestamp(),
         });
       }
-
 
       return true;
     } catch (error) {
@@ -595,49 +446,34 @@ export const storage = {
     }
   },
 
-
   updateTeammatePosition: async (companyCode, userId, newPosition) => {
-
     try {
-      
       const companyDocRef = doc(db, "companies", companyCode);
       const companySnap = await getDoc(companyDocRef);
-      const isAdmin = companySnap.exists() && companySnap.data().registeredBy === userId;
+      const isAdmin =
+        companySnap.exists() && companySnap.data().registeredBy === userId;
 
       const canCreateBlasts = isAdmin || EDITABLE_ROLES.includes(newPosition);
 
-      
-
-      const teammateDocRef = doc(
-        db,
-        "companies",
-        companyCode,
-        "team",
-        userId
-      );
+      const teammateDocRef = doc(db, "companies", companyCode, "team", userId);
 
       await updateDoc(teammateDocRef, {
-
         minePosition: newPosition,
 
         canCreateBlasts: canCreateBlasts,
 
         updatedAt: serverTimestamp(),
       });
-
-      
 
       const userDocRef = doc(db, "users", userId);
 
       await updateDoc(userDocRef, {
-
         minePosition: newPosition,
 
         canCreateBlasts: canCreateBlasts,
 
         updatedAt: serverTimestamp(),
       });
-
 
       return true;
     } catch (error) {
@@ -647,21 +483,11 @@ export const storage = {
     }
   },
 
-
   getTeammatesByRole: async (companyCode, role) => {
-
     try {
-
-      const teamRef = collection(
-        db,
-        "companies",
-        companyCode,
-        "team"
-      );
-
+      const teamRef = collection(db, "companies", companyCode, "team");
 
       const q = query(teamRef, where("minePosition", "==", role));
-
 
       const querySnapshot = await getDocs(q);
 
@@ -669,12 +495,10 @@ export const storage = {
 
       querySnapshot.forEach((doc) => {
         teammates.push({
-
           uid: doc.id,
           ...doc.data(),
         });
       });
-
 
       return teammates;
     } catch (error) {
@@ -684,31 +508,21 @@ export const storage = {
     }
   },
 
-  
-
-
-
   getCompanySettings: async (companyCode) => {
-
     try {
-
       const settingsDocRef = doc(
         db,
         "companies",
         companyCode,
         "settings",
-        "config"
+        "config",
       );
-
 
       const settingsSnap = await getDoc(settingsDocRef);
 
-
       if (!settingsSnap.exists()) {
-
         return null;
       }
-
 
       return settingsSnap.data();
     } catch (error) {
@@ -718,54 +532,41 @@ export const storage = {
     }
   },
 
-
   toggleRBAC: async (companyCode, enabled, userId) => {
-
     try {
-
       const currentUser = auth.currentUser;
 
       if (!currentUser) throw new Error("No authenticated user");
-
-      
 
       const companyDocRef = doc(db, "companies", companyCode);
 
       const companySnap = await getDoc(companyDocRef);
 
-
       if (!companySnap.exists()) throw new Error("Company not found");
-
 
       const companyData = companySnap.data();
 
       if (companyData.registeredBy !== currentUser.uid) {
-
         throw new Error("Only company admin can toggle RBAC");
       }
-
-      
 
       const settingsDocRef = doc(
         db,
         "companies",
         companyCode,
         "settings",
-        "config"
+        "config",
       );
-
 
       await setDoc(
         settingsDocRef,
         {
-
           rbacEnabled: enabled,
 
           updatedAt: serverTimestamp(),
         },
-        { merge: true }
+        { merge: true },
       );
-
 
       return true;
     } catch (error) {
@@ -775,31 +576,18 @@ export const storage = {
     }
   },
 
-  
-
-
-
   isSetupComplete: async () => {
-
     try {
-
       const value = await AsyncStorage.getItem(CACHE_KEYS.IS_SETUP_COMPLETE);
 
       return value === "true";
     } catch (error) {
-
       return false;
     }
   },
 
-  
-
-
-
   clearAll: async () => {
-
     try {
-
       await AsyncStorage.removeItem(CACHE_KEYS.IS_SETUP_COMPLETE);
 
       await AsyncStorage.removeItem(CACHE_KEYS.CACHED_USER);

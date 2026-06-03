@@ -249,12 +249,23 @@ export const storage = {
     try {
       const canCreateBlasts = RBAC.canCreateBlasts(minePosition);
       const userDocRef = doc(db, "users", userId);
+      const userSnap = await getDoc(userDocRef);
+      const userData = userSnap.exists() ? userSnap.data() : {};
+      const companyCode = userData.companyCode || null;
 
-      updateDoc(userDocRef, {
+      await updateDoc(userDocRef, {
         minePosition,
         canCreateBlasts,
         updatedAt: serverTimestamp(),
       }).catch((err) => console.log("Offline: Update user position queued"));
+
+      if (companyCode) {
+        await updateDoc(doc(db, "companies", companyCode, "team", userId), {
+          minePosition,
+          canCreateBlasts,
+          updatedAt: serverTimestamp(),
+        }).catch((err) => console.log("Offline: Update team role queued"));
+      }
 
       const cached = await AsyncStorage.getItem(CACHE_KEYS.CACHED_USER);
       if (cached) {

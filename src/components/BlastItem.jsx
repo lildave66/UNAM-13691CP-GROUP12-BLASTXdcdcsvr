@@ -1,6 +1,3 @@
-
-
-
 import { useTheme } from "../utils/theme";
 
 import React from "react";
@@ -11,14 +8,13 @@ const BlastItem = ({ blast, onPress }) => {
   const theme = useTheme();
   const isScheduled = blast.status === "Scheduled";
   const statusColor = isScheduled ? "#FF9900" : "#2ECC71";
+  const authorName = blast.createdByName || blast.createdBy || "Unknown user";
 
-  
   const isNew =
     Math.floor(
       (Date.now() - new Date(blast.createdAt).getTime()) / (1000 * 60 * 60),
     ) < 24;
 
-  
   const getBlastIcon = () => {
     if (blast?.blastSize === "Large") return "💥";
     if (blast?.blastSize === "Medium") return "⚡";
@@ -98,11 +94,7 @@ const BlastItem = ({ blast, onPress }) => {
         </View>
         <Text style={styles.subtitle}>{blast.status}</Text>
         <Text style={styles.subtitle}>📍 {blast?.targetArea}</Text>
-        {blast.createdByName && (
-          <Text style={styles.createdBy}>
-            Planned by: {blast.createdByName}
-          </Text>
-        )}
+        <Text style={styles.createdBy}>Set by: {authorName}</Text>
         <Text style={styles.time}>
           {new Date(blast.createdAt).toLocaleDateString()}
         </Text>

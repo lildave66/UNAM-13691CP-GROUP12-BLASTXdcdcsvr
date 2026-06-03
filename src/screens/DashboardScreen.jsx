@@ -269,11 +269,12 @@ const DashboardScreen = () => {
               <Text style={styles.launchDateText}>
                 Scheduled: {nextBlast.launchDate || "TBD"}
               </Text>
-              {nextBlast.createdByName && (
-                <Text style={styles.creatorText}>
-                  By: {nextBlast.createdByName}
-                </Text>
-              )}
+              <Text style={styles.creatorText}>
+                By:{" "}
+                {nextBlast.createdByName ||
+                  nextBlast.createdBy ||
+                  "Unknown user"}
+              </Text>
             </View>
           </Card>
         ) : (
