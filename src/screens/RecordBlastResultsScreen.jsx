@@ -1,4 +1,3 @@
-
 import {
   StyleSheet,
   Text,
@@ -22,15 +21,12 @@ import { ExportUtils } from "../utils/export";
 
 import { Input, Button } from "../components";
 
-
 const RecordBlastResultsScreen = () => {
-
   const navigation = useNavigation();
 
   const route = useRoute();
 
   const { blast } = route.params || {};
-
 
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -41,12 +37,17 @@ const RecordBlastResultsScreen = () => {
 
   const [isAdminUser, setIsAdminUser] = useState(false);
 
-  const [results, setResults] = useState({
+  const isBlastLockedForEditing =
+    blast?.status === "Scheduled" &&
+    new Date(blast.launchDate?.replace(" ", "T") || 0).getTime() > Date.now();
 
+  const canEditResults = canEdit && !isBlastLockedForEditing;
+
+  const [results, setResults] = useState({
     rocksFragmented: blast?.results?.rocksFragmented || "",
-// Style object property
+    // Style object property
     productivityRating: blast?.results?.productivityRating || "",
-// Style object property
+    // Style object property
     safetyIncidents: blast?.results?.safetyIncidents?.toString() || "0",
 
     notes: blast?.results?.notes || "",
@@ -60,18 +61,20 @@ const RecordBlastResultsScreen = () => {
     setExporting(true);
     try {
       // Create a single-item array for the report generator
-      const singleBlastReport = [{
-        ...blast,
-        results: {
-          ...results,
-          recordedAt: new Date().toISOString()
-        }
-      }];
-      
+      const singleBlastReport = [
+        {
+          ...blast,
+          results: {
+            ...results,
+            recordedAt: new Date().toISOString(),
+          },
+        },
+      ];
+
       await ExportUtils.generateBlastReport(
         singleBlastReport,
         userData?.company,
-        `Operation: ${blast.title}`
+        `Operation: ${blast.title}`,
       );
     } catch (error) {
       console.error("Export failed", error);
@@ -81,23 +84,18 @@ const RecordBlastResultsScreen = () => {
     }
   };
 
-
   const loadUserData = async () => {
-
     try {
-
       const user = await storage.getUserData();
       setUserData(user);
 
-      
       const isAdmin = RBAC.isCompanyAdmin(user?.uid, user?.company);
       setIsAdminUser(isAdmin);
       const rbacEnabled = user?.company?.rbacEnabled !== false;
 
-      
-      const canEditRecords = isAdmin || !rbacEnabled || RBAC.canEditBlasts(user?.minePosition);
+      const canEditRecords =
+        isAdmin || !rbacEnabled || RBAC.canEditBlasts(user?.minePosition);
       setCanEdit(canEditRecords);
-
 
       if (!canEditRecords) {
         Alert.alert(
@@ -110,8 +108,15 @@ const RecordBlastResultsScreen = () => {
     }
   };
 
-
   const handleSave = async () => {
+    if (isBlastLockedForEditing) {
+      Alert.alert(
+        "Locked",
+        "This blast cannot be edited until the scheduled timer finishes.",
+      );
+      return;
+    }
+
     if (!results.rocksFragmented.trim() || !results.productivityRating.trim()) {
       Alert.alert("Error", "Please fill in all required fields.");
       return;
@@ -126,7 +131,7 @@ const RecordBlastResultsScreen = () => {
           ...results,
           productivityRating: parseFloat(results.productivityRating),
           safetyIncidents: parseInt(results.safetyIncidents) || 0,
-        }
+        },
       );
 
       if (success) {
@@ -157,7 +162,7 @@ const RecordBlastResultsScreen = () => {
             setLoading(true);
             const success = await storage.deleteBlast(
               blast.companyCode || userData?.companyCode,
-              blast.id
+              blast.id,
             );
             setLoading(false);
             if (success) {
@@ -169,11 +174,9 @@ const RecordBlastResultsScreen = () => {
             }
           },
         },
-      ]
+      ],
     );
   };
-
-
 
   return (
     <KeyboardAvoidingView
@@ -190,7 +193,7 @@ const RecordBlastResultsScreen = () => {
             <Text style={styles.backButton}>← Back</Text>
           </Pressable>
           <Text style={styles.headerTitle}>Record Blast Results</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
             <Pressable onPress={handleExport} disabled={exporting}>
               {exporting ? (
                 <ActivityIndicator size="small" color="#FF9900" />
@@ -217,6 +220,17 @@ const RecordBlastResultsScreen = () => {
         )}
 
         {}
+        {isBlastLockedForEditing && (
+          <View style={styles.lockBanner}>
+            <Text style={styles.lockTitle}>⏳ Blast is locked</Text>
+            <Text style={styles.lockText}>
+              Results and edits are only available after the scheduled blast
+              time finishes.
+            </Text>
+          </View>
+        )}
+
+        {}
         {blast && (
           <View style={styles.blastInfo}>
             <Text style={styles.blastInfoTitle}>{blast.title}</Text>
@@ -237,9 +251,10 @@ const RecordBlastResultsScreen = () => {
             placeholder="e.g., 2500 tons"
             value={results.rocksFragmented}
             onChangeText={(value) =>
-              canEdit && setResults({ ...results, rocksFragmented: value })
+              canEditResults &&
+              setResults({ ...results, rocksFragmented: value })
             }
-            editable={canEdit}
+            editable={canEditResults}
           />
 
           <Input
@@ -248,13 +263,12 @@ const RecordBlastResultsScreen = () => {
             keyboardType="decimal-pad"
             value={results.productivityRating}
             onChangeText={(value) =>
-              canEdit && setResults({ ...results, productivityRating: value })
+              canEditResults &&
+              setResults({ ...results, productivityRating: value })
             }
-            editable={canEdit}
+            editable={canEditResults}
           />
-          <Text style={styles.hint}>
-            Rating based on fragmentation quality
-          </Text>
+          <Text style={styles.hint}>Rating based on fragmentation quality</Text>
 
           <Input
             label="Safety Incidents"
@@ -262,9 +276,10 @@ const RecordBlastResultsScreen = () => {
             keyboardType="number-pad"
             value={results.safetyIncidents}
             onChangeText={(value) =>
-              canEdit && setResults({ ...results, safetyIncidents: value })
+              canEditResults &&
+              setResults({ ...results, safetyIncidents: value })
             }
-            editable={canEdit}
+            editable={canEditResults}
           />
 
           <Input
@@ -274,19 +289,19 @@ const RecordBlastResultsScreen = () => {
             numberOfLines={4}
             value={results.notes}
             onChangeText={(value) =>
-              canEdit && setResults({ ...results, notes: value })
+              canEditResults && setResults({ ...results, notes: value })
             }
-            editable={canEdit}
+            editable={canEditResults}
           />
         </View>
 
         {}
-        {canEdit && (
+        {canEditResults && (
           <View style={{ paddingHorizontal: 20 }}>
             <Button
               label="Save Blast Report"
               onPress={handleSave}
-              disabled={loading}
+              disabled={loading || isBlastLockedForEditing}
               style={styles.saveButton}
             />
 
@@ -300,7 +315,7 @@ const RecordBlastResultsScreen = () => {
           </View>
         )}
 
-        {!canEdit && (
+        {!canEditResults && (
           <View style={styles.viewOnlyNotice}>
             <Text style={styles.viewOnlyText}>
               Contact an Engineer, Specialist, or Analyst to edit this record
@@ -312,26 +327,20 @@ const RecordBlastResultsScreen = () => {
   );
 };
 
-
 export default RecordBlastResultsScreen;
 
-
 const styles = StyleSheet.create({
-
   container: {
-
     flex: 1,
 
     backgroundColor: "#F8F9FA",
   },
 
   scrollContent: {
-
     paddingBottom: 40,
   },
 
   header: {
-
     flexDirection: "row",
 
     justifyContent: "space-between",
@@ -352,7 +361,6 @@ const styles = StyleSheet.create({
   },
 
   backButton: {
-
     color: "#FF9900",
 
     fontSize: 16,
@@ -361,7 +369,6 @@ const styles = StyleSheet.create({
   },
 
   headerTitle: {
-
     fontSize: 18,
 
     fontWeight: "bold",
@@ -381,7 +388,6 @@ const styles = StyleSheet.create({
   },
 
   readOnlyBanner: {
-
     backgroundColor: "#FFF3CD",
 
     paddingHorizontal: 20,
@@ -400,7 +406,6 @@ const styles = StyleSheet.create({
   },
 
   readOnlyText: {
-
     fontSize: 14,
 
     fontWeight: "bold",
@@ -409,7 +414,6 @@ const styles = StyleSheet.create({
   },
 
   readOnlySubtext: {
-
     fontSize: 12,
 
     color: "#856404",
@@ -417,8 +421,31 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
-  blastInfo: {
+  lockBanner: {
+    backgroundColor: "#FFF4F0",
+    marginHorizontal: 15,
+    marginTop: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: "#FF9900",
+  },
 
+  lockTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#8A4B00",
+  },
+
+  lockText: {
+    fontSize: 12,
+    color: "#8A4B00",
+    marginTop: 4,
+    lineHeight: 18,
+  },
+
+  blastInfo: {
     backgroundColor: "#FFF",
 
     paddingHorizontal: 20,
@@ -433,7 +460,6 @@ const styles = StyleSheet.create({
   },
 
   blastInfoTitle: {
-
     fontSize: 16,
 
     fontWeight: "bold",
@@ -444,7 +470,6 @@ const styles = StyleSheet.create({
   },
 
   blastInfoDescription: {
-
     fontSize: 13,
 
     color: "#666",
@@ -453,7 +478,6 @@ const styles = StyleSheet.create({
   },
 
   blastInfoDate: {
-
     fontSize: 12,
 
     color: "#95A5A6",
@@ -462,14 +486,12 @@ const styles = StyleSheet.create({
   },
 
   form: {
-
     paddingHorizontal: 20,
 
     paddingVertical: 20,
   },
 
   sectionTitle: {
-
     fontSize: 15,
 
     fontWeight: "bold",
@@ -482,12 +504,10 @@ const styles = StyleSheet.create({
   },
 
   formGroup: {
-
     marginBottom: 18,
   },
 
   label: {
-
     fontSize: 13,
 
     fontWeight: "600",
@@ -498,7 +518,6 @@ const styles = StyleSheet.create({
   },
 
   input: {
-
     backgroundColor: "#FFF",
 
     borderWidth: 1,
@@ -517,21 +536,18 @@ const styles = StyleSheet.create({
   },
 
   disabledInput: {
-
     backgroundColor: "#F5F5F5",
 
     color: "#95A5A6",
   },
 
   textArea: {
-
     paddingVertical: 12,
 
     minHeight: 80,
   },
 
   hint: {
-
     fontSize: 11,
 
     color: "#95A5A6",
@@ -542,7 +558,6 @@ const styles = StyleSheet.create({
   },
 
   metric: {
-
     fontSize: 12,
 
     color: "#FF9900",
@@ -553,7 +568,6 @@ const styles = StyleSheet.create({
   },
 
   saveButton: {
-
     backgroundColor: "#FF9900",
 
     marginHorizontal: 20,
@@ -578,7 +592,6 @@ const styles = StyleSheet.create({
   },
 
   saveButtonText: {
-
     color: "#FFF",
 
     fontSize: 16,
@@ -587,7 +600,6 @@ const styles = StyleSheet.create({
   },
 
   cancelButton: {
-
     backgroundColor: "#FFF",
 
     marginHorizontal: 20,
@@ -606,7 +618,6 @@ const styles = StyleSheet.create({
   },
 
   cancelButtonText: {
-
     color: "#666",
 
     fontSize: 16,
@@ -615,7 +626,6 @@ const styles = StyleSheet.create({
   },
 
   viewOnlyNotice: {
-
     backgroundColor: "#E8F4F8",
 
     marginHorizontal: 20,
@@ -634,7 +644,6 @@ const styles = StyleSheet.create({
   },
 
   viewOnlyText: {
-
     fontSize: 13,
 
     color: "#0C5460",

@@ -1,10 +1,3 @@
-
-
-
-
-
-
-
 import {
   StyleSheet,
   Text,
@@ -32,27 +25,24 @@ const NativeDateTimePicker =
     ? null
     : require("@react-native-community/datetimepicker").default;
 
-
 const PlanEventScreen = () => {
-  
   const navigation = useNavigation();
-  
+
   const [step, setStep] = useState(1);
-  
+
   const [loading, setLoading] = useState(false);
-  
+
   const [userData, setUserData] = useState(null);
-  
+
   const [showDatePicker, setShowDatePicker] = useState(false);
-  
+
   const [pickerDate, setPickerDate] = useState(() => {
     const nextHour = new Date();
     nextHour.setHours(nextHour.getHours() + 1, 0, 0, 0);
     return nextHour;
   });
-  
+
   const [blastData, setBlastData] = useState({
-    
     title: "",
     // Style object property
     description: "",
@@ -66,24 +56,20 @@ const PlanEventScreen = () => {
     holes: "",
     // Style object property
     explosivesUsed: "ANFO",
-    
+
     detonationPattern: "Electronic sequencing",
   });
 
-  
-  
   const [checks, setChecks] = useState({
-    
     siteClear: false,
-    
+
     equipmentReady: false,
-    
+
     blastPatternVerified: false,
-    
+
     safetyPersonPresent: false,
   });
 
-  
   const isSafetyComplete = Object.values(checks).every((val) => val === true);
 
   React.useEffect(() => {
@@ -146,17 +132,12 @@ const PlanEventScreen = () => {
     updateLaunchDate(selectedDate);
   };
 
-  
   const loadUserData = async () => {
-    
     const user = await storage.getUserData();
     setUserData(user);
 
-    
     const isAdmin = RBAC.isCompanyAdmin(user?.uid, user?.company);
 
-    
-    
     if (!RBAC.canEditBlasts(user?.minePosition, isAdmin)) {
       Alert.alert(
         "Permission Denied",
@@ -166,70 +147,69 @@ const PlanEventScreen = () => {
     }
   };
 
-  
   const validateStep1 = () => {
-    
+    const MAX_SCHEDULE_WINDOW_MS = 24 * 60 * 60 * 1000;
+
     if (!blastData.title.trim()) {
       Alert.alert(
         "Input Error",
         "Please provide a name for this blast operation.",
       );
-      
+
       return false;
     }
 
-    
     if (!blastData.targetArea.trim()) {
       Alert.alert("Input Error", "Please specify the target area/zone.");
-      
+
       return false;
     }
 
-    
     if (!blastData.blastSize.trim() || isNaN(blastData.blastSize)) {
       Alert.alert("Input Error", "Please enter blast size in kg.");
-      
+
       return false;
     }
 
-    
     if (!blastData.holes.trim() || isNaN(blastData.holes)) {
       Alert.alert("Input Error", "Please enter number of holes.");
-      
+
       return false;
     }
 
-    
-    
     const dateRegex = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/;
-    
+
     if (!dateRegex.test(blastData.launchDate)) {
       Alert.alert(
         "Date Error",
         "Please choose a launch date and time using the picker.",
       );
-      
+
       return false;
     }
 
-    
     const targetDate = new Date(
       blastData.launchDate.replace(" ", "T"),
     ).getTime();
-    
+
     if (isNaN(targetDate) || targetDate <= Date.now()) {
       Alert.alert("Time Error", "Launch time must be in the future.");
-      
       return false;
     }
 
-    
+    const maxAllowedDate = Date.now() + MAX_SCHEDULE_WINDOW_MS;
+    if (targetDate > maxAllowedDate) {
+      Alert.alert(
+        "Schedule Window Error",
+        "Blast operations can only be scheduled within the next 24 hours.",
+      );
+      return false;
+    }
+
     return true;
   };
 
-  
   const handleSchedule = async () => {
-    
     if (!isSafetyComplete) {
       Alert.alert(
         "Safety Warning",
@@ -239,36 +219,33 @@ const PlanEventScreen = () => {
     }
 
     setLoading(true);
-    
+
     const newBlast = {
       ...blastData,
-      
+
       status: "Scheduled",
       companyCode: userData?.companyCode,
       createdByName: userData?.name || "Unknown",
       checks,
     };
 
-    
     const saved = await storage.saveBlast(newBlast);
 
     setLoading(false);
-    
+
     if (saved) {
-      
       await sendLocalNotification(
-        "Blast Scheduled! ",
-        `Operation "${blastData.title}" is set for ${blastData.launchDate}.`,
+        "Blast Warning",
+        `Operation "${blastData.title}" is scheduled for ${blastData.launchDate}. This record is locked for editing until the blast window finishes.`,
       );
 
       Alert.alert(
         "Success",
-        "Blast operation is now scheduled and the countdown has begun.",
+        "Blast operation is now scheduled. It is locked for edits until the countdown finishes.",
         [
           {
-            
             text: "View Dashboard",
-            
+
             onPress: () => navigation.navigate("Dashboard"),
           },
         ],
@@ -281,11 +258,8 @@ const PlanEventScreen = () => {
     }
   };
 
-  
   const renderStep = () => {
-    
     if (step === 1) {
-      
       return (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>⛏️ Blast Details</Text>
@@ -399,7 +373,6 @@ const PlanEventScreen = () => {
       );
     }
 
-    
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}> Safety Verification</Text>
@@ -490,7 +463,6 @@ const PlanEventScreen = () => {
     );
   };
 
-  
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -513,208 +485,194 @@ const PlanEventScreen = () => {
   );
 };
 
-
 export default PlanEventScreen;
 
-
 const styles = StyleSheet.create({
-  
   container: { flex: 1, backgroundColor: "#F8F9FA" },
-  
+
   header: {
-    
     backgroundColor: "#1A1F3A",
-    
+
     paddingTop: 50,
-    
+
     paddingBottom: 20,
-    
+
     paddingHorizontal: 20,
-    
+
     flexDirection: "row",
-    
+
     justifyContent: "space-between",
-    
+
     alignItems: "center",
   },
-  
+
   headerTitle: { fontSize: 18, fontWeight: "bold", color: "#FFF" },
-  
+
   closeButton: { padding: 5 },
-  
+
   closeButtonText: { color: "#FFF", fontSize: 20 },
-  
+
   content: { padding: 25 },
-  
+
   section: { width: "100%" },
-  
+
   sectionTitle: {
-    
     fontSize: 22,
-    
+
     fontWeight: "bold",
-    
+
     color: "#1A1F3A",
-    
+
     marginBottom: 10,
   },
-  
+
   stepDescription: { fontSize: 14, color: "#95A5A6", marginBottom: 30 },
-  
+
   label: {
-    
     fontSize: 14,
-    
+
     fontWeight: "600",
-    
+
     color: "#2C3E50",
-    
+
     marginBottom: 8,
-    
+
     marginTop: 15,
   },
-  
+
   input: {
-    
     backgroundColor: "#FFF",
-    
+
     borderRadius: 12,
-    
+
     padding: 15,
-    
+
     fontSize: 16,
-    
+
     borderWidth: 1,
-    
+
     borderColor: "#E0E0E0",
   },
-  
+
   pickerContainer: {
-    
     backgroundColor: "#FFF",
-    
+
     borderRadius: 12,
-    
+
     borderWidth: 1,
-    
+
     borderColor: "#E0E0E0",
-    
+
     overflow: "hidden",
-    
+
     marginTop: 8,
   },
-  
+
   checkItem: {
-    
     flexDirection: "row",
-    
+
     alignItems: "center",
-    
+
     backgroundColor: "#FFF",
-    
+
     padding: 15,
-    
+
     borderRadius: 12,
-    
+
     marginBottom: 15,
-    
+
     borderWidth: 1,
-    
+
     borderColor: "#ECF0F1",
   },
-  
+
   checkLabel: { fontSize: 16, fontWeight: "bold", color: "#2C3E50" },
-  
+
   checkSub: { fontSize: 12, color: "#95A5A6", marginTop: 2 },
-  
+
   primaryButton: {
-    
     backgroundColor: "#1A1F3A",
-    
+
     borderRadius: 12,
-    
+
     paddingVertical: 18,
-    
+
     alignItems: "center",
-    
+
     marginTop: 30,
   },
-  
+
   scheduleButton: {
-    
     backgroundColor: "#FF9900",
-    
+
     borderRadius: 12,
-    
+
     paddingVertical: 18,
-    
+
     alignItems: "center",
-    
+
     marginTop: 30,
-    
+
     shadowColor: "#FF9900",
-    
+
     shadowOffset: { width: 0, height: 4 },
-    
+
     shadowOpacity: 0.3,
-    
+
     shadowRadius: 8,
-    
+
     elevation: 5,
   },
-  
+
   disabledButton: {
-    
     backgroundColor: "#BDC3C7",
-    
+
     shadowOpacity: 0,
-    
+
     elevation: 0,
   },
-  
+
   primaryButtonText: { color: "#FFF", fontSize: 16, fontWeight: "bold" },
-  
+
   datePickerButton: {
-    
     backgroundColor: "#FFF",
-    
+
     borderRadius: 12,
-    
+
     padding: 16,
-    
+
     borderWidth: 1,
-    
+
     borderColor: "#E0E0E0",
-    
+
     marginTop: 10,
-    
+
     flexDirection: "row",
-    
+
     justifyContent: "space-between",
-    
+
     alignItems: "center",
   },
-  
+
   datePickerContent: { flex: 1 },
-  
+
   datePickerLabel: {
-    
     fontSize: 14,
-    
+
     fontWeight: "600",
-    
+
     color: "#1A1F3A",
-    
+
     marginBottom: 6,
   },
-  
+
   datePickerText: { fontSize: 16, color: "#2C3E50" },
-  
+
   datePickerIcon: { fontSize: 22, marginLeft: 12 },
-  
+
   formatNote: { fontSize: 11, color: "#95A5A6", marginTop: 5, marginLeft: 5 },
-  
+
   backLink: { marginTop: 20, alignItems: "center" },
-  
+
   backLinkText: { color: "#95A5A6", fontWeight: "600" },
 });
