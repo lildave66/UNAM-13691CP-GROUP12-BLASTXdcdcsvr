@@ -3,8 +3,6 @@
 
 
 
-
-
 import React, { useState, useMemo } from "react";
 
 import {
@@ -40,15 +38,15 @@ const BlastsListScreen = () => {
 
   const [query, setQuery] = useState("");
 
-// Declare a constant or variable
+
   const blasts = useMemo(() => SAMPLE_BLASTS, []);
 
-// Declare a constant or variable
+
   const filtered = blasts.filter((b) =>
     b.toLowerCase().includes(query.toLowerCase()),
   );
 
-// Return JSX layout
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>

@@ -3,8 +3,6 @@
 
 
 
-
-
 import {
   StyleSheet,
   Text,
@@ -39,14 +37,14 @@ const LoginScreen = () => {
   const navigation = useNavigation();
 
   const [email, setEmail] = useState("");
-// Declare a constant or variable
+
   const [password, setPassword] = useState("");
-// Declare a constant or variable
+
   const [loading, setLoading] = useState(false);
 
-// Define a function or component using an arrow function
+
   const handleLogin = async () => {
-// Control flow statement
+
     if (!email || !password) {
       Alert.alert("Error", "Please enter both email and password");
       return;

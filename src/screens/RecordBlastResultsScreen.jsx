@@ -45,9 +45,9 @@ const RecordBlastResultsScreen = () => {
 
   const [results, setResults] = useState({
     rocksFragmented: blast?.results?.rocksFragmented || "",
-    // Style object property
+    
     productivityRating: blast?.results?.productivityRating || "",
-    // Style object property
+    
     safetyIncidents: blast?.results?.safetyIncidents?.toString() || "0",
 
     notes: blast?.results?.notes || "",
@@ -60,7 +60,7 @@ const RecordBlastResultsScreen = () => {
   const handleExport = async () => {
     setExporting(true);
     try {
-      // Create a single-item array for the report generator
+      
       const singleBlastReport = [
         {
           ...blast,

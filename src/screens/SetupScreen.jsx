@@ -3,8 +3,6 @@
 
 
 
-
-
 import {
   StyleSheet,
   Text,
@@ -39,13 +37,13 @@ const SetupScreen = () => {
   const [setupData, setSetupData] = useState({
     
     companyName: "",
-    // Style object property
+    
     mineType: "",
-    // Style object property
+    
     location: "",
-    // Style object property
+    
     mineDepth: "",
-    // Style object property
+    
     rbacEnabled: true,
   });
 

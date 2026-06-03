@@ -1,8 +1,3 @@
-
-
-
-
-
 import { Alert } from "react-native";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -25,60 +20,47 @@ import {
 
 import { db, auth } from "./firebase";
 
-
 const CACHE_KEYS = {
-  
   IS_SETUP_COMPLETE: "blastx_is_setup_complete",
-  
+
   CACHED_USER: "blastx_cache_user",
 };
 
-
-
 export const MINE_ROLES = {
-  
   ENGINEER: "Engineer",
-  
+
   SPECIALIST: "Specialist",
-  
+
   ANALYST: "Analyst",
-  
+
   SUPERVISOR: "Supervisor",
-  
+
   MANAGER: "Manager",
-  
+
   TECHNICIAN: "Technician",
 };
 
-
-
 const EDITABLE_ROLES = ["Engineer", "Specialist", "Analyst"];
 
-
-
-
 export const RBAC = {
-  
   canEditBlasts: (userRole, isAdmin = false) =>
     isAdmin || EDITABLE_ROLES.includes(userRole),
-  
+
   canCreateBlasts: (userRole, isAdmin = false) =>
     isAdmin || EDITABLE_ROLES.includes(userRole),
-  
+
   canViewAllRecords: (userRole) => true,
-  
+
   isCompanyAdmin: (userId, companyData) => {
     if (!userId || !companyData) return false;
     return userId === companyData.registeredBy;
   },
-  
+
   getUserAccessLevel: (userRole, isAdmin = false) =>
     isAdmin || EDITABLE_ROLES.includes(userRole) ? "EDITOR" : "VIEWER",
 };
 
-
-const MOCK_MODE = false; 
-
+const MOCK_MODE = false;
 
 const MOCK_USER = {
   uid: "mock-user-123",
@@ -198,48 +180,30 @@ const hydrateCompanyDetails = async (userData) => {
   }
 };
 
-
 export const storage = {
-  
-
-
-  getUserData: async (forceRefresh = false) => {
+  getUserData: async (forceRefresh = false, userOverride = null) => {
     try {
       if (MOCK_MODE) return MOCK_USER;
 
-      const currentUser = auth.currentUser;
+      const currentUser = auth.currentUser || userOverride;
       if (!currentUser) {
-        
         const cached = await AsyncStorage.getItem(CACHE_KEYS.CACHED_USER);
         return cached ? JSON.parse(cached) : null;
       }
 
-      
-      if (!forceRefresh) {
-        const cached = await AsyncStorage.getItem(CACHE_KEYS.CACHED_USER);
-        if (cached) {
-          const cachedUser = JSON.parse(cached);
-          
-          syncUserCanCreateBlasts(cachedUser).catch(console.error);
-          hydrateCompanyDetails(cachedUser).catch(console.error);
-          return cachedUser;
-        }
-      }
-
-      
       const userDocRef = doc(db, "users", currentUser.uid);
       const userSnap = await getDoc(userDocRef);
 
       if (!userSnap.exists()) {
         console.warn("User document not found in Firestore");
-        return null;
+        const cached = await AsyncStorage.getItem(CACHE_KEYS.CACHED_USER);
+        return cached ? JSON.parse(cached) : null;
       }
 
       const userData = { uid: currentUser.uid, ...userSnap.data() };
       const syncedUserData = await syncUserCanCreateBlasts(userData);
       const hydratedUserData = await hydrateCompanyDetails(syncedUserData);
 
-      
       await AsyncStorage.setItem(
         CACHE_KEYS.CACHED_USER,
         JSON.stringify(hydratedUserData),
@@ -248,7 +212,34 @@ export const storage = {
       return hydratedUserData;
     } catch (error) {
       console.error("Error getting user data:", error);
-      
+      const cached = await AsyncStorage.getItem(CACHE_KEYS.CACHED_USER);
+      return cached ? JSON.parse(cached) : null;
+    }
+  },
+
+  getUserDataCached: async (forceRefresh = false, userOverride = null) => {
+    try {
+      const currentUser = auth.currentUser || userOverride;
+      if (!currentUser) {
+        const cached = await AsyncStorage.getItem(CACHE_KEYS.CACHED_USER);
+        return cached ? JSON.parse(cached) : null;
+      }
+
+      if (!forceRefresh) {
+        const cached = await AsyncStorage.getItem(CACHE_KEYS.CACHED_USER);
+        if (cached) {
+          const cachedUser = JSON.parse(cached);
+          if (cachedUser?.uid === currentUser.uid) {
+            syncUserCanCreateBlasts(cachedUser).catch(console.error);
+            hydrateCompanyDetails(cachedUser).catch(console.error);
+            return cachedUser;
+          }
+        }
+      }
+
+      return await storage.getUserData(true);
+    } catch (error) {
+      console.error("Error getting cached user data:", error);
       const cached = await AsyncStorage.getItem(CACHE_KEYS.CACHED_USER);
       return cached ? JSON.parse(cached) : null;
     }
@@ -258,15 +249,13 @@ export const storage = {
     try {
       const canCreateBlasts = RBAC.canCreateBlasts(minePosition);
       const userDocRef = doc(db, "users", userId);
-      
-      
+
       updateDoc(userDocRef, {
         minePosition,
         canCreateBlasts,
         updatedAt: serverTimestamp(),
-      }).catch(err => console.log("Offline: Update user position queued"));
+      }).catch((err) => console.log("Offline: Update user position queued"));
 
-      
       const cached = await AsyncStorage.getItem(CACHE_KEYS.CACHED_USER);
       if (cached) {
         const userData = JSON.parse(cached);
@@ -291,18 +280,19 @@ export const storage = {
       if (!currentUser) throw new Error("No authenticated user");
 
       const companyDocRef = doc(db, "companies", companyCode);
-      
+
       updateDoc(companyDocRef, {
         ...details,
         updatedAt: serverTimestamp(),
-      }).catch(err => console.log("Offline: Update company info queued"));
+      }).catch((err) => console.log("Offline: Update company info queued"));
 
-      
       const userDocRef = doc(db, "users", currentUser.uid);
       updateDoc(userDocRef, {
         company: details,
         updatedAt: serverTimestamp(),
-      }).catch(err => console.log("Offline: Update user company info queued"));
+      }).catch((err) =>
+        console.log("Offline: Update user company info queued"),
+      );
 
       const cachedUser = await AsyncStorage.getItem(CACHE_KEYS.CACHED_USER);
       if (cachedUser) {
@@ -325,9 +315,6 @@ export const storage = {
     }
   },
 
-  
-
-
   getCompany: async (companyCode) => {
     try {
       if (!companyCode) return null;
@@ -344,9 +331,6 @@ export const storage = {
     }
   },
 
-  
-
-
   saveBlast: async (blast) => {
     try {
       if (MOCK_MODE) {
@@ -359,21 +343,25 @@ export const storage = {
 
       const currentUser = auth.currentUser;
       if (!currentUser) {
-        
         const cached = await AsyncStorage.getItem(CACHE_KEYS.CACHED_USER);
-        if (!cached) throw new Error("No authenticated user and no cache found.");
+        if (!cached)
+          throw new Error("No authenticated user and no cache found.");
       }
 
       const userData = (await storage.getUserData()) || {};
       const companyCode = blast.companyCode || userData?.companyCode;
-      if (!companyCode) throw new Error("Company code required for saving blasts.");
+      if (!companyCode)
+        throw new Error("Company code required for saving blasts.");
 
-      const isAdmin = RBAC.isCompanyAdmin(currentUser?.uid || userData?.uid, userData?.company);
+      const isAdmin = RBAC.isCompanyAdmin(
+        currentUser?.uid || userData?.uid,
+        userData?.company,
+      );
       const expectedCanCreateBlasts = RBAC.canCreateBlasts(
         userData?.minePosition,
-        isAdmin
+        isAdmin,
       );
-      
+
       const shouldSyncCanCreateBlasts =
         typeof userData?.canCreateBlasts === "undefined" ||
         userData.canCreateBlasts !== expectedCanCreateBlasts;
@@ -383,7 +371,7 @@ export const storage = {
         updateDoc(doc(db, "users", currentUser.uid), {
           canCreateBlasts: expectedCanCreateBlasts,
           updatedAt: serverTimestamp(),
-        }).catch(err => console.log("Offline: Sync permissions queued"));
+        }).catch((err) => console.log("Offline: Sync permissions queued"));
 
         userData.canCreateBlasts = expectedCanCreateBlasts;
         await AsyncStorage.setItem(
@@ -393,7 +381,10 @@ export const storage = {
       }
 
       if (!userData.canCreateBlasts && !isAdmin) {
-        throw new Error("You do not have permission to create blast records. Current role: " + (userData?.minePosition || "Unknown"));
+        throw new Error(
+          "You do not have permission to create blast records. Current role: " +
+            (userData?.minePosition || "Unknown"),
+        );
       }
 
       const blastsRef = collection(db, "companies", companyCode, "blasts");
@@ -406,7 +397,6 @@ export const storage = {
         updatedAt: serverTimestamp(),
       };
 
-      
       const docRef = await addDoc(blastsRef, newBlastData);
 
       return {
@@ -509,9 +499,6 @@ export const storage = {
     }
   },
 
-  
-
-
   getRecents: async (companyCode, maxResults = 50) => {
     try {
       return await storage.getBlasts(companyCode, maxResults);
@@ -596,9 +583,6 @@ export const storage = {
     }
   },
 
-  
-
-
   getTeammates: async (companyCode) => {
     try {
       if (MOCK_MODE) {
@@ -665,9 +649,6 @@ export const storage = {
     }
   },
 
-  
-
-
   getCompanySettings: async (companyCode) => {
     try {
       if (MOCK_MODE) return MOCK_USER.company;
@@ -732,9 +713,6 @@ export const storage = {
     }
   },
 
-  
-
-
   isSetupComplete: async () => {
     try {
       const value = await AsyncStorage.getItem(CACHE_KEYS.IS_SETUP_COMPLETE);
@@ -743,9 +721,6 @@ export const storage = {
       return false;
     }
   },
-
-  
-
 
   clearAll: async () => {
     try {

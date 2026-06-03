@@ -44,17 +44,17 @@ const PlanEventScreen = () => {
 
   const [blastData, setBlastData] = useState({
     title: "",
-    // Style object property
+    
     description: "",
-    // Style object property
+    
     launchDate: "",
-    // Style object property
+    
     blastSize: "",
-    // Style object property
+    
     targetArea: "",
-    // Style object property
+    
     holes: "",
-    // Style object property
+    
     explosivesUsed: "ANFO",
 
     detonationPattern: "Electronic sequencing",

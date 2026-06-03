@@ -3,7 +3,6 @@
 
 
 
-
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import {
@@ -56,7 +55,6 @@ const EDITABLE_ROLES = ["Engineer", "Specialist", "Analyst"];
 
 
 
-
 export const RBAC = {
 
   canEditBlasts: (userRole, isAdmin = false) => isAdmin || EDITABLE_ROLES.includes(userRole),
@@ -70,7 +68,6 @@ export const RBAC = {
   getUserAccessLevel: (userRole, isAdmin = false) =>
     (isAdmin || EDITABLE_ROLES.includes(userRole)) ? "EDITOR" : "VIEWER",
 };
-
 
 
 

@@ -3,7 +3,6 @@
 
 
 
-
 import "react-native-get-random-values";
 import "react-native-url-polyfill/auto";
 
@@ -72,7 +71,6 @@ try {
 
 
 export { app, auth, db };
-
 
 
 

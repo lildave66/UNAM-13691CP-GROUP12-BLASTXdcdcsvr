@@ -3,8 +3,6 @@
 
 
 
-
-
 import {
   StyleSheet,
   Text,
@@ -41,29 +39,29 @@ const SignupScreen = () => {
   const navigation = useNavigation();
   
   const [name, setName] = useState("");
-  // Declare a constant or variable
+  
   const [email, setEmail] = useState("");
-  // Declare a constant or variable
+  
   const [password, setPassword] = useState("");
-  // Declare a constant or variable
+  
   const [confirmPassword, setConfirmPassword] = useState("");
-  // Declare a constant or variable
+  
   const [companyCode, setCompanyCode] = useState("");
-  // Declare a constant or variable
-  const [minePosition, setMinePosition] = useState(MINE_ROLES.ENGINEER); // NEW: Position selection
-  // Declare a constant or variable
+  
+  const [minePosition, setMinePosition] = useState(MINE_ROLES.ENGINEER); 
+  
   const [loading, setLoading] = useState(false);
 
-  // Define a function or component using an arrow function
+  
   const generateCode = () => {
-    // Return a value from the function
+    
     return Math.random().toString(36).substring(2, 8).toUpperCase();
   };
 
-  // Define a function or component using an arrow function
+  
   const handleSignup = async () => {
-    // Validate all fields including position
-    // Control flow statement
+    
+    
     if (!name || !email || !password || !confirmPassword || !minePosition) {
       Alert.alert("Error", "Please fill in all fields including your position");
       return;

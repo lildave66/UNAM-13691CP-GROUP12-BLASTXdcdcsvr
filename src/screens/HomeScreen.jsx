@@ -3,8 +3,6 @@
 
 
 
-
-
 import { StyleSheet, Text, View, Image, ActivityIndicator, Pressable } from "react-native";
 
 import React, { useEffect, useState } from "react";

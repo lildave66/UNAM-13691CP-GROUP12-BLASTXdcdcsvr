@@ -46,7 +46,7 @@ export const AppNavigator = ({ user }) => {
         return;
       }
 
-      const userData = await storage.getUserData(true);
+      const userData = await storage.getUserData(true, user);
 
       let shouldRouteToSetup = false;
 

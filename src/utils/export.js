@@ -4,12 +4,8 @@ import { Platform } from 'react-native';
 
 
 
-
 export const ExportUtils = {
   
-
-
-
 
 
   generateBlastReport: async (blasts, company, filterStatus = "All") => {

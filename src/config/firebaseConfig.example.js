@@ -3,11 +3,6 @@
 
 
 
-
-
-
-
-
 export const firebaseConfig = {
 
   apiKey: "YOUR_API_KEY_HERE", 
@@ -24,10 +19,6 @@ export const firebaseConfig = {
 
   measurementId: "YOUR_MEASUREMENT_ID", 
 };
-
-
-
-
 
 
 

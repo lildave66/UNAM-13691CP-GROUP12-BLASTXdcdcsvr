@@ -2,7 +2,6 @@
 
 
 
-
 import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
@@ -55,7 +54,7 @@ const AdminSettingsScreen = () => {
       });
 
       const team = await storage.getTeammates(data.companyCode);
-      // Sort: Admin first, then by name
+      
       const sortedTeam = team.sort((a, b) => {
         if (a.uid === data.company?.registeredBy) return -1;
         if (b.uid === data.company?.registeredBy) return 1;
