@@ -1,10 +1,3 @@
-
-
-
-
-
-
-
 import React, { useEffect, useState } from "react";
 
 import { ActivityIndicator, View } from "react-native";
@@ -16,8 +9,6 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "../utils/firebase";
 
 import { storage } from "../utils/storage";
-
-
 
 import HomeScreen from "../screens/HomeScreen";
 
@@ -39,9 +30,7 @@ import DashboardScreen from "../screens/DashboardScreen";
 
 import AdminSettingsScreen from "../screens/AdminSettingsScreen";
 
-
 const Stack = createNativeStackNavigator();
-
 
 export const AppNavigator = ({ user }) => {
   const [setupComplete, setSetupComplete] = useState(null);
@@ -57,14 +46,12 @@ export const AppNavigator = ({ user }) => {
         return;
       }
 
-      
-      const userData = await storage.getUserData();
-      const isSetupDone = await storage.isSetupComplete();
+      const userData = await storage.getUserData(true);
 
       let shouldRouteToSetup = false;
 
       if (!userData?.companyCode) {
-        shouldRouteToSetup = !isSetupDone;
+        shouldRouteToSetup = true;
       } else {
         try {
           const companySnap = await getDoc(
@@ -72,11 +59,13 @@ export const AppNavigator = ({ user }) => {
           );
           const companyData = companySnap.exists() ? companySnap.data() : null;
 
+          const hasBasicCompanyInfo =
+            Boolean(companyData?.name) && Boolean(companyData?.mineType);
+
           shouldRouteToSetup =
-            companyData?.registeredBy === user.uid && !isSetupDone;
+            companyData?.registeredBy === user.uid && !hasBasicCompanyInfo;
         } catch (error) {
           console.log("Offline or error during routing check:", error);
-          
           shouldRouteToSetup = false;
         }
       }
@@ -149,6 +138,5 @@ export const AppNavigator = ({ user }) => {
     </Stack.Navigator>
   );
 };
-
 
 export default AppNavigator;
