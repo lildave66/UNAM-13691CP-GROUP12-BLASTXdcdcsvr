@@ -1,35 +1,19 @@
-
-
-
-
-
-
-
-
-
-
-
 export const firebaseConfig = {
+  apiKey:
+    process.env.FIREBASE_API_KEY || "AIzaSyBC2oaphuML4Nx1GvWn8m7J0s4l9bVMg5U",
 
-  apiKey: process.env.FIREBASE_API_KEY || "AIzaSyDIevRJg9vdWl9o4n5e6L_fbl13xBDWaUA", 
+  authDomain:
+    process.env.FIREBASE_AUTH_DOMAIN || "blastx-95436.firebaseapp.com",
 
-  authDomain: process.env.FIREBASE_AUTH_DOMAIN || "blastx-717d3.firebaseapp.com", 
+  projectId: process.env.FIREBASE_PROJECT_ID || "blastx-95436",
 
-  projectId: process.env.FIREBASE_PROJECT_ID || "blastx-717d3", 
+  storageBucket:
+    process.env.FIREBASE_STORAGE_BUCKET || "blastx-95436.firebasestorage.app",
 
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "blastx-717d3.firebasestorage.app", 
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || "220783300604",
 
-  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || "403108878690", 
+  appId:
+    process.env.FIREBASE_APP_ID || "1:220783300604:web:3f21cb88c1a987eb8dac79",
 
-  appId: process.env.FIREBASE_APP_ID || "1:403108878690:web:312501a9b154586086b43b", 
-
-  measurementId: process.env.FIREBASE_MEASUREMENT_ID || "G-1328PTWS86", 
+  measurementId: process.env.FIREBASE_MEASUREMENT_ID || "G-1328PTWS86",
 };
-
-
-
-
-
-
-
-
