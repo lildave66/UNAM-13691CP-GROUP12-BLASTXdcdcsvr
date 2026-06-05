@@ -1,13 +1,9 @@
-import * as Print from 'expo-print';
-import * as Sharing from 'expo-sharing';
-import { Platform } from 'react-native';
-
-
+import * as Print from "expo-print";
+import * as Sharing from "expo-sharing";
+import { Alert, Platform } from "react-native";
+import { getExpoRuntimeInfo } from "./expo";
 
 export const ExportUtils = {
-  
-
-
   generateBlastReport: async (blasts, company, filterStatus = "All") => {
     try {
       if (!Array.isArray(blasts)) {
@@ -16,7 +12,7 @@ export const ExportUtils = {
       }
       const companyName = company?.name || "Mine Blast Operations";
       const reportDate = new Date().toLocaleDateString();
-      
+
       const htmlContent = `
         <!DOCTYPE html>
         <html>
@@ -144,15 +140,15 @@ export const ExportUtils = {
                 <span class="stat-label">Total Operations</span>
               </div>
               <div class="stat-box">
-                <span class="stat-value">${blasts.filter(b => b.status === 'Completed').length}</span>
+                <span class="stat-value">${blasts.filter((b) => b.status === "Completed").length}</span>
                 <span class="stat-label">Completed</span>
               </div>
               <div class="stat-box">
-                <span class="stat-value">${blasts.filter(b => b.status === 'Scheduled').length}</span>
+                <span class="stat-value">${blasts.filter((b) => b.status === "Scheduled").length}</span>
                 <span class="stat-label">Scheduled</span>
               </div>
               <div class="stat-box">
-                <span class="stat-value">${blasts.filter(b => b.status === 'Failed').length}</span>
+                <span class="stat-value">${blasts.filter((b) => b.status === "Failed").length}</span>
                 <span class="stat-label">Failed</span>
               </div>
             </div>
@@ -168,22 +164,26 @@ export const ExportUtils = {
                 </tr>
               </thead>
               <tbody>
-                ${blasts.map(blast => `
+                ${blasts
+                  .map(
+                    (blast) => `
                   <tr>
                     <td>
-                      <strong>${blast.title || 'Untitled'}</strong><br/>
-                      <small>${blast.description || ''}</small>
+                      <strong>${blast.title || "Untitled"}</strong><br/>
+                      <small>${blast.description || ""}</small>
                     </td>
-                    <td>${blast.targetArea || 'N/A'}</td>
-                    <td>${blast.launchDate || 'TBD'}</td>
-                    <td class="status-${(blast.status || 'Unknown').toLowerCase()}">${blast.status}</td>
+                    <td>${blast.targetArea || "N/A"}</td>
+                    <td>${blast.launchDate || "TBD"}</td>
+                    <td class="status-${(blast.status || "Unknown").toLowerCase()}">${blast.status}</td>
                     <td>
-                      Size: ${blast.blastSize || 'N/A'} kg<br/>
+                      Size: ${blast.blastSize || "N/A"} kg<br/>
                       Holes: ${blast.holes || 0}<br/>
-                      By: ${blast.createdByName || 'N/A'}
+                      By: ${blast.createdByName || "N/A"}
                     </td>
                   </tr>
-                `).join('')}
+                `,
+                  )
+                  .join("")}
               </tbody>
             </table>
 
@@ -194,20 +194,43 @@ export const ExportUtils = {
         </html>
       `;
 
-      
-      const { uri } = await Print.printToFileAsync({ html: htmlContent });
-      
-      
-      if (Platform.OS === 'ios') {
-        await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
-      } else {
-        await Sharing.shareAsync(uri, { mimeType: 'application/pdf' });
+      const { isExpoGo } = getExpoRuntimeInfo();
+
+      if (isExpoGo) {
+        console.warn(
+          "PDF export is running in Expo Go; native sharing support may be limited.",
+        );
       }
-      
+
+      const { uri } = await Print.printToFileAsync({ html: htmlContent });
+
+      if (Platform.OS === "ios") {
+        await Sharing.shareAsync(uri, {
+          UTI: ".pdf",
+          mimeType: "application/pdf",
+        });
+      } else {
+        await Sharing.shareAsync(uri, { mimeType: "application/pdf" });
+      }
+
       return true;
     } catch (error) {
-      console.error('Error generating PDF:', error);
-      throw error;
+      console.error("Error generating PDF:", error);
+
+      const { isExpoGo } = getExpoRuntimeInfo();
+      if (isExpoGo) {
+        Alert.alert(
+          "Expo Go export limited",
+          "PDF export uses native Expo modules and may not work in Expo Go. Use a development build for full export support.",
+        );
+        return false;
+      }
+
+      Alert.alert(
+        "Export failed",
+        "Could not generate the PDF report. Please try again.",
+      );
+      return false;
     }
-  }
+  },
 };
