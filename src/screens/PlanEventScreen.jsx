@@ -20,11 +20,6 @@ import { sendLocalNotification } from "../utils/notifications";
 
 import { Input, Button, Card } from "../components";
 
-const NativeDateTimePicker =
-  Platform.OS === "web"
-    ? null
-    : require("@react-native-community/datetimepicker").default;
-
 const PlanEventScreen = () => {
   const navigation = useNavigation();
 
@@ -34,12 +29,16 @@ const PlanEventScreen = () => {
 
   const [userData, setUserData] = useState(null);
 
-  const [showDatePicker, setShowDatePicker] = useState(false);
-
-  const [pickerDate, setPickerDate] = useState(() => {
+  const [typedDate, setTypedDate] = useState(() => {
     const nextHour = new Date();
     nextHour.setHours(nextHour.getHours() + 1, 0, 0, 0);
-    return nextHour;
+    return `${nextHour.getFullYear()}-${String(nextHour.getMonth() + 1).padStart(2, "0")}-${String(nextHour.getDate()).padStart(2, "0")}`;
+  });
+
+  const [typedTime, setTypedTime] = useState(() => {
+    const nextHour = new Date();
+    nextHour.setHours(nextHour.getHours() + 1, 0, 0, 0);
+    return `${String(nextHour.getHours()).padStart(2, "0")}:${String(nextHour.getMinutes()).padStart(2, "0")}`;
   });
 
   const [blastData, setBlastData] = useState({
@@ -151,46 +150,41 @@ const PlanEventScreen = () => {
     const MAX_SCHEDULE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
     if (!blastData.title.trim()) {
-      Alert.alert(
-        "Input Error",
-        "Please provide a name for this blast operation.",
-      );
-
+      Alert.alert("Input Error", "Please provide a name for this blast operation.");
       return false;
     }
 
     if (!blastData.targetArea.trim()) {
       Alert.alert("Input Error", "Please specify the target area/zone.");
-
       return false;
     }
 
     if (!blastData.blastSize.trim() || isNaN(blastData.blastSize)) {
       Alert.alert("Input Error", "Please enter blast size in kg.");
-
       return false;
     }
 
     if (!blastData.holes.trim() || isNaN(blastData.holes)) {
       Alert.alert("Input Error", "Please enter number of holes.");
-
       return false;
     }
 
-    const dateRegex = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/;
+    
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    const timeRegex = /^\d{2}:\d{2}$/;
 
-    if (!dateRegex.test(blastData.launchDate)) {
-      Alert.alert(
-        "Date Error",
-        "Please choose a launch date and time using the picker.",
-      );
-
+    if (!dateRegex.test(typedDate)) {
+      Alert.alert("Date Error", "Please enter date as YYYY-MM-DD");
       return false;
     }
 
-    const targetDate = new Date(
-      blastData.launchDate.replace(" ", "T"),
-    ).getTime();
+    if (!timeRegex.test(typedTime)) {
+      Alert.alert("Time Error", "Please enter time as HH:MM (24h format)");
+      return false;
+    }
+
+    const launchDateString = `${typedDate} ${typedTime}`;
+    const targetDate = new Date(launchDateString.replace(" ", "T")).getTime();
 
     if (isNaN(targetDate) || targetDate <= Date.now()) {
       Alert.alert("Time Error", "Launch time must be in the future.");
@@ -206,6 +200,8 @@ const PlanEventScreen = () => {
       return false;
     }
 
+    
+    setBlastData(prev => ({ ...prev, launchDate: launchDateString }));
     return true;
   };
 
@@ -220,9 +216,10 @@ const PlanEventScreen = () => {
 
     setLoading(true);
 
+    const launchDateString = `${typedDate} ${typedTime}`;
     const newBlast = {
       ...blastData,
-
+      launchDate: launchDateString,
       status: "Scheduled",
       companyCode: userData?.companyCode,
       createdByName: userData?.name || "Unknown",
@@ -236,7 +233,7 @@ const PlanEventScreen = () => {
     if (saved) {
       await sendLocalNotification(
         "Blast Warning",
-        `Operation "${blastData.title}" is scheduled for ${blastData.launchDate}. This record is locked for editing until the blast window finishes.`,
+        `Operation "${blastData.title}" is scheduled for ${launchDateString}. This record is locked for editing until the blast window finishes.`,
       );
 
       Alert.alert(
@@ -286,21 +283,25 @@ const PlanEventScreen = () => {
             multiline
           />
 
-          <Input
-            label="Blast Size (kg) *"
-            placeholder="e.g., 50"
-            keyboardType="decimal-pad"
-            value={blastData.blastSize}
-            onChangeText={(t) => setBlastData({ ...blastData, blastSize: t })}
-          />
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <Input
+              label="Blast Size (kg) *"
+              placeholder="e.g., 50"
+              keyboardType="decimal-pad"
+              value={blastData.blastSize}
+              onChangeText={(t) => setBlastData({ ...blastData, blastSize: t })}
+              style={{ flex: 1 }}
+            />
 
-          <Input
-            label="Number of Holes *"
-            placeholder="e.g., 45"
-            keyboardType="number-pad"
-            value={blastData.holes}
-            onChangeText={(t) => setBlastData({ ...blastData, holes: t })}
-          />
+            <Input
+              label="Holes *"
+              placeholder="e.g., 45"
+              keyboardType="number-pad"
+              value={blastData.holes}
+              onChangeText={(t) => setBlastData({ ...blastData, holes: t })}
+              style={{ flex: 1 }}
+            />
+          </View>
 
           <Input
             label="Explosives Used"
@@ -320,46 +321,25 @@ const PlanEventScreen = () => {
             }
           />
 
-          {Platform.OS === "web" ? (
+          <View style={{ flexDirection: 'row', gap: 10 }}>
             <Input
-              label="Scheduled Date/Time *"
-              placeholder="YYYY-MM-DD HH:MM"
-              value={blastData.launchDate}
-              onChangeText={(value) =>
-                setBlastData((prev) => ({ ...prev, launchDate: value }))
-              }
+              label="Date (YYYY-MM-DD) *"
+              placeholder="2026-06-04"
+              value={typedDate}
+              onChangeText={setTypedDate}
+              style={{ flex: 1.5 }}
             />
-          ) : (
-            <Pressable
-              style={styles.datePickerButton}
-              onPress={openLaunchDatePicker}
-            >
-              <View style={styles.datePickerContent}>
-                <Text style={styles.datePickerLabel}>
-                  Scheduled Date/Time *
-                </Text>
-                <Text style={styles.datePickerText}>
-                  {formatLaunchDateForDisplay(blastData.launchDate)}
-                </Text>
-              </View>
-              <Text style={styles.datePickerIcon}>📅</Text>
-            </Pressable>
-          )}
-
-          {showDatePicker && NativeDateTimePicker && (
-            <NativeDateTimePicker
-              value={pickerDate}
-              mode="datetime"
-              display={Platform.OS === "ios" ? "spinner" : "default"}
-              minimumDate={new Date()}
-              onChange={handleLaunchDateChange}
+            <Input
+              label="Time (HH:MM) *"
+              placeholder="14:30"
+              value={typedTime}
+              onChangeText={setTypedTime}
+              style={{ flex: 1 }}
             />
-          )}
+          </View>
 
           <Text style={styles.formatNote}>
-            {Platform.OS === "web"
-              ? "Type the date and time as YYYY-MM-DD HH:MM on web."
-              : "Tap the date card to choose a date and time."}
+            Enter the scheduled date and time manually.
           </Text>
 
           <Button

@@ -6,6 +6,7 @@ import {
   Pressable,
   ActivityIndicator,
   TextInput,
+  RefreshControl,
 } from "react-native";
 
 import React, { useEffect, useState, useCallback } from "react";
@@ -28,6 +29,7 @@ const DashboardScreen = () => {
   const [nextBlast, setNextBlast] = useState(null);
 
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [exporting, setExporting] = useState(false);
 
   const [canEdit, setCanEdit] = useState(true);
@@ -98,53 +100,67 @@ const DashboardScreen = () => {
     });
   };
 
-  const loadDashboardData = async () => {
-    setLoading(true);
+  const loadDashboardData = async (isRefresh = false) => {
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
 
-    const data = await storage.getUserData();
-    const blastData = await storage.getBlasts(data?.companyCode, 10);
+    try {
+      const data = await storage.getUserData(isRefresh);
+      const blastData = await storage.getBlasts(data?.companyCode, 10);
 
-    setUserData(data);
+      setUserData(data);
 
-    if (data?.companyCode) {
-      const companyInfo = await storage.getCompany(data.companyCode);
-      if (companyInfo) {
-        setUserData((prev) => ({ ...prev, company: companyInfo }));
+      if (data?.companyCode) {
+        const companyInfo = await storage.getCompany(data.companyCode);
+        if (companyInfo) {
+          setUserData((prev) => ({ ...prev, company: companyInfo }));
+        }
+
+        const isAdmin = RBAC.isCompanyAdmin(
+          data.uid,
+          companyInfo || data.company,
+        );
+        const rbacEnabled =
+          companyInfo?.rbacEnabled ?? data.company?.rbacEnabled ?? true;
+
+        const canEditBlasts =
+          isAdmin || !rbacEnabled || RBAC.canEditBlasts(data.minePosition);
+        setCanEdit(canEditBlasts);
       }
 
-      const isAdmin = RBAC.isCompanyAdmin(
-        data.uid,
-        companyInfo || data.company,
-      );
-      const rbacEnabled =
-        companyInfo?.rbacEnabled ?? data.company?.rbacEnabled ?? true;
+      setBlasts(blastData);
 
-      const canEditBlasts =
-        isAdmin || !rbacEnabled || RBAC.canEditBlasts(data.minePosition);
-      setCanEdit(canEditBlasts);
+      const scheduled = blastData.filter((b) => b.status === "Scheduled");
+
+      if (scheduled.length > 0) {
+        setNextBlast(scheduled[0]);
+      } else {
+        setNextBlast(null);
+      }
+
+      setStats({
+        total: blastData.length,
+
+        scheduled: scheduled.length,
+
+        completed: blastData.filter((b) => b.status === "Completed").length,
+
+        failed: blastData.filter((b) => b.status === "Failed").length,
+      });
+    } catch (error) {
+      console.error("Dashboard load failed", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-
-    setBlasts(blastData);
-
-    const scheduled = blastData.filter((b) => b.status === "Scheduled");
-
-    if (scheduled.length > 0) {
-      setNextBlast(scheduled[0]);
-    } else {
-      setNextBlast(null);
-    }
-
-    setStats({
-      total: blastData.length,
-
-      scheduled: scheduled.length,
-
-      completed: blastData.filter((b) => b.status === "Completed").length,
-
-      failed: blastData.filter((b) => b.status === "Failed").length,
-    });
-    setLoading(false);
   };
+
+  const onRefresh = useCallback(() => {
+    loadDashboardData(true);
+  }, []);
 
   const filteredBlasts = blasts.filter((blast) => {
     const query = searchTerm.trim().toLowerCase();
@@ -236,7 +252,18 @@ const DashboardScreen = () => {
         </Pressable>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#FF9900"]}
+            tintColor="#FF9900"
+          />
+        }
+      >
         {}
         {nextBlast ? (
           <Card style={styles.timerCard}>

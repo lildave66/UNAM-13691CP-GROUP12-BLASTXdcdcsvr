@@ -191,6 +191,14 @@ export const storage = {
         return cached ? JSON.parse(cached) : null;
       }
 
+      if (!forceRefresh) {
+        const cached = await AsyncStorage.getItem(CACHE_KEYS.CACHED_USER);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed.uid === currentUser.uid) return parsed;
+        }
+      }
+
       const userDocRef = doc(db, "users", currentUser.uid);
       const userSnap = await getDoc(userDocRef);
 
