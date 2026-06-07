@@ -28,13 +28,6 @@
     },
     "scheme": "blastx-app",
     "plugins": [
-      [
-        "expo-notifications",
-        {
-          "icon": "./src/utils/assets/images/favicon.png",
-          "color": "#FF9900"
-        }
-      ],
       "@react-native-community/datetimepicker"
     ],
     "extra": {
