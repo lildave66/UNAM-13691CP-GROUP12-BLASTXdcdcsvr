@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Alert,
   TextInput,
+  ScrollView,
 } from "react-native";
 
 import React, { useEffect, useState, useCallback } from "react";
@@ -271,13 +272,6 @@ const BlastHistoryScreen = () => {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={loading}
-              onRefresh={loadBlastHistory}
-              tintColor="#FF9900"
-            />
-          }
         />
       ) : (
         <EmptyState

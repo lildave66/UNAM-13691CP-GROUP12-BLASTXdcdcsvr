@@ -13,8 +13,6 @@ import { onAuthStateChanged } from "firebase/auth";
 
 import { auth } from "./src/utils/firebase";
 
-import { registerForPushNotificationsAsync } from "./src/utils/notifications";
-
 import AppNavigator from "./src/navigation/AppNavigator";
 import { ThemeProvider } from "./src/utils/theme";
 
@@ -31,8 +29,6 @@ export default function App() {
       
       if (user) {
         console.log("User is signed in:", user.uid);
-        
-        registerForPushNotificationsAsync();
       } else {
         console.log("No user signed in");
       }

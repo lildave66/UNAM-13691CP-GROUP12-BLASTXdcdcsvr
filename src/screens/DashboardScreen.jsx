@@ -6,7 +6,6 @@ import {
   Pressable,
   ActivityIndicator,
   TextInput,
-  RefreshControl,
 } from "react-native";
 
 import React, { useEffect, useState, useCallback } from "react";
@@ -29,7 +28,6 @@ const DashboardScreen = () => {
   const [nextBlast, setNextBlast] = useState(null);
 
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [exporting, setExporting] = useState(false);
 
   const [canEdit, setCanEdit] = useState(true);
@@ -100,15 +98,11 @@ const DashboardScreen = () => {
     });
   };
 
-  const loadDashboardData = async (isRefresh = false) => {
-    if (isRefresh) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
+  const loadDashboardData = async () => {
+    setLoading(true);
 
     try {
-      const data = await storage.getUserData(isRefresh);
+      const data = await storage.getUserData();
       const blastData = await storage.getBlasts(data?.companyCode, 10);
 
       setUserData(data);
@@ -154,13 +148,8 @@ const DashboardScreen = () => {
       console.error("Dashboard load failed", error);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
-
-  const onRefresh = useCallback(() => {
-    loadDashboardData(true);
-  }, []);
 
   const cancelBlast = async (blastId) => {
     Alert.alert(
@@ -288,14 +277,6 @@ const DashboardScreen = () => {
       <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={["#FF9900"]}
-            tintColor="#FF9900"
-          />
-        }
       >
         {}
         {nextBlast ? (
@@ -321,10 +302,13 @@ const DashboardScreen = () => {
             <View style={styles.footerRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.launchDateText}>
-                  Scheduled: {nextBlast.launchDate || "TBD"}
+                  📅 Date: {nextBlast.launchDate ? nextBlast.launchDate.split(' ')[0] : "TBD"}
+                </Text>
+                <Text style={styles.launchDateText}>
+                  🕒 Time: {nextBlast.launchDate ? nextBlast.launchDate.split(' ')[1] : "TBD"}
                 </Text>
                 <Text style={styles.creatorText}>
-                  Set by: {nextBlast.createdByName || "Unknown user"}
+                  👤 Set by: {nextBlast.createdByName || "Unknown user"}
                 </Text>
               </View>
               {canEdit && (

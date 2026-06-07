@@ -16,8 +16,6 @@ import { useNavigation } from "@react-navigation/native";
 
 import { storage, RBAC } from "../utils/storage";
 
-import { sendLocalNotification } from "../utils/notifications";
-
 import { Input, Button, Card } from "../components";
 
 const PlanEventScreen = () => {
@@ -29,6 +27,7 @@ const PlanEventScreen = () => {
 
   const [userData, setUserData] = useState(null);
 
+  
   const [typedDate, setTypedDate] = useState(() => {
     const nextHour = new Date();
     nextHour.setHours(nextHour.getHours() + 1, 0, 0, 0);
@@ -43,29 +42,19 @@ const PlanEventScreen = () => {
 
   const [blastData, setBlastData] = useState({
     title: "",
-    
     description: "",
-    
-    launchDate: "",
-    
+    launchDate: "", 
     blastSize: "",
-    
     targetArea: "",
-    
     holes: "",
-    
     explosivesUsed: "ANFO",
-
     detonationPattern: "Electronic sequencing",
   });
 
   const [checks, setChecks] = useState({
     siteClear: false,
-
     equipmentReady: false,
-
     blastPatternVerified: false,
-
     safetyPersonPresent: false,
   });
 
@@ -74,62 +63,6 @@ const PlanEventScreen = () => {
   React.useEffect(() => {
     loadUserData();
   }, []);
-
-  const formatLaunchDateForDisplay = (value) => {
-    if (!value) {
-      return "Tap to choose date and time";
-    }
-
-    const parsedDate = new Date(value.replace(" ", "T"));
-    if (isNaN(parsedDate.getTime())) {
-      return value;
-    }
-
-    return parsedDate.toLocaleString(undefined, {
-      dateStyle: "medium",
-      timeStyle: "short",
-    });
-  };
-
-  const getDefaultLaunchDate = () => {
-    const nextHour = new Date();
-    nextHour.setHours(nextHour.getHours() + 1, 0, 0, 0);
-    return nextHour;
-  };
-
-  const updateLaunchDate = (date) => {
-    const formatted = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
-    setBlastData((prev) => ({ ...prev, launchDate: formatted }));
-  };
-
-  const openLaunchDatePicker = () => {
-    if (Platform.OS === "web") {
-      return;
-    }
-
-    const currentDate = blastData.launchDate
-      ? new Date(blastData.launchDate.replace(" ", "T"))
-      : getDefaultLaunchDate();
-
-    if (isNaN(currentDate.getTime())) {
-      setPickerDate(getDefaultLaunchDate());
-    } else {
-      setPickerDate(currentDate);
-    }
-
-    setShowDatePicker(true);
-  };
-
-  const handleLaunchDateChange = (event, selectedDate) => {
-    setShowDatePicker(false);
-
-    if (!selectedDate) {
-      return;
-    }
-
-    setPickerDate(selectedDate);
-    updateLaunchDate(selectedDate);
-  };
 
   const loadUserData = async () => {
     const user = await storage.getUserData();
@@ -140,7 +73,7 @@ const PlanEventScreen = () => {
     if (!RBAC.canEditBlasts(user?.minePosition, isAdmin)) {
       Alert.alert(
         "Permission Denied",
-        `Your position (${user?.minePosition}) does not have permission to plan blast operations. Only Engineers, Specialists, Analysts, or Company Admins can perform this action.`,
+        `Your position (${user?.minePosition}) does not have permission to plan blast operations.`,
         [{ text: "Go Back", onPress: () => navigation.goBack() }],
       );
     }
@@ -149,23 +82,13 @@ const PlanEventScreen = () => {
   const validateStep1 = () => {
     const MAX_SCHEDULE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
-    if (!blastData.title.trim()) {
-      Alert.alert("Input Error", "Please provide a name for this blast operation.");
+    if (!blastData.title.trim() || !blastData.targetArea.trim() || !blastData.blastSize.trim() || !blastData.holes.trim()) {
+      Alert.alert("Input Error", "Please fill in all required fields marked with *.");
       return false;
     }
 
-    if (!blastData.targetArea.trim()) {
-      Alert.alert("Input Error", "Please specify the target area/zone.");
-      return false;
-    }
-
-    if (!blastData.blastSize.trim() || isNaN(blastData.blastSize)) {
-      Alert.alert("Input Error", "Please enter blast size in kg.");
-      return false;
-    }
-
-    if (!blastData.holes.trim() || isNaN(blastData.holes)) {
-      Alert.alert("Input Error", "Please enter number of holes.");
+    if (isNaN(blastData.blastSize) || isNaN(blastData.holes)) {
+      Alert.alert("Input Error", "Size and Holes must be numbers.");
       return false;
     }
 
@@ -193,24 +116,17 @@ const PlanEventScreen = () => {
 
     const maxAllowedDate = Date.now() + MAX_SCHEDULE_WINDOW_MS;
     if (targetDate > maxAllowedDate) {
-      Alert.alert(
-        "Schedule Window Error",
-        "Blast operations can only be scheduled within the next 24 hours.",
-      );
+      Alert.alert("Schedule Error", "Blasts can only be scheduled within the next 24 hours.");
       return false;
     }
 
-    
     setBlastData(prev => ({ ...prev, launchDate: launchDateString }));
     return true;
   };
 
   const handleSchedule = async () => {
     if (!isSafetyComplete) {
-      Alert.alert(
-        "Safety Warning",
-        "All safety checks must be cleared before this blast can be scheduled.",
-      );
+      Alert.alert("Safety Warning", "All safety checks must be cleared.");
       return;
     }
 
@@ -227,31 +143,25 @@ const PlanEventScreen = () => {
     };
 
     const saved = await storage.saveBlast(newBlast);
-
     setLoading(false);
 
     if (saved) {
-      await sendLocalNotification(
-        "Blast Warning",
-        `Operation "${blastData.title}" is scheduled for ${launchDateString}. This record is locked for editing until the blast window finishes.`,
-      );
-
       Alert.alert(
-        "Success",
-        "Blast operation is now scheduled. It is locked for edits until the countdown finishes.",
+        "Success", 
+        "Blast scheduled successfully.", 
         [
-          {
-            text: "View Dashboard",
-
-            onPress: () => navigation.navigate("Dashboard"),
-          },
-        ],
+          { 
+            text: "Go to Dashboard", 
+            onPress: () => {
+              setTimeout(() => {
+                navigation.navigate("Dashboard");
+              }, 100);
+            } 
+          }
+        ]
       );
     } else {
-      Alert.alert(
-        "Error",
-        "Failed to schedule blast operation. Please try again.",
-      );
+      Alert.alert("Error", "Failed to schedule blast.");
     }
   };
 
@@ -307,30 +217,26 @@ const PlanEventScreen = () => {
             label="Explosives Used"
             placeholder="e.g., ANFO, Dynamite"
             value={blastData.explosivesUsed}
-            onChangeText={(value) =>
-              setBlastData({ ...blastData, explosivesUsed: value })
-            }
+            onChangeText={(value) => setBlastData({ ...blastData, explosivesUsed: value })}
           />
 
           <Input
             label="Detonation Pattern"
             placeholder="e.g., Electronic sequencing"
             value={blastData.detonationPattern}
-            onChangeText={(value) =>
-              setBlastData({ ...blastData, detonationPattern: value })
-            }
+            onChangeText={(value) => setBlastData({ ...blastData, detonationPattern: value })}
           />
 
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <Input
-              label="Date (YYYY-MM-DD) *"
+              label="Set Date (YYYY-MM-DD) *"
               placeholder="2026-06-04"
               value={typedDate}
               onChangeText={setTypedDate}
               style={{ flex: 1.5 }}
             />
             <Input
-              label="Time (HH:MM) *"
+              label="Set Time (HH:MM) *"
               placeholder="14:30"
               value={typedTime}
               onChangeText={setTypedTime}
@@ -339,7 +245,7 @@ const PlanEventScreen = () => {
           </View>
 
           <Text style={styles.formatNote}>
-            Enter the scheduled date and time manually.
+            Enter date and time separately using the fields above.
           </Text>
 
           <Button
@@ -357,86 +263,30 @@ const PlanEventScreen = () => {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}> Safety Verification</Text>
         <Text style={styles.stepDescription}>
-          Verify the following requirements to unlock the blast timer. All items
-          are MANDATORY.
+          Verify requirements to unlock the countdown.
         </Text>
 
-        <Card style={styles.checkItem}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.checkLabel}>Site Clear of Personnel</Text>
-            <Text style={styles.checkSub}>
-              Blast radius is secured and empty
-            </Text>
-          </View>
-          <Switch
-            value={checks.siteClear}
-            onValueChange={(v) => setChecks({ ...checks, siteClear: v })}
-            trackColor={{ false: "#D1D1D1", true: "#2ECC71" }}
-          />
-        </Card>
-
-        <Card style={styles.checkItem}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.checkLabel}>Equipment Ready</Text>
-            <Text style={styles.checkSub}>
-              All equipment tested and operational
-            </Text>
-          </View>
-          <Switch
-            value={checks.equipmentReady}
-            onValueChange={(v) => setChecks({ ...checks, equipmentReady: v })}
-            trackColor={{ false: "#D1D1D1", true: "#2ECC71" }}
-          />
-        </Card>
-
-        <Card style={styles.checkItem}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.checkLabel}>Blast Pattern Verified</Text>
-            <Text style={styles.checkSub}>
-              Hole configuration and spacing approved
-            </Text>
-          </View>
-          <Switch
-            value={checks.blastPatternVerified}
-            onValueChange={(v) =>
-              setChecks({ ...checks, blastPatternVerified: v })
-            }
-            trackColor={{ false: "#D1D1D1", true: "#2ECC71" }}
-          />
-        </Card>
-
-        <Card style={styles.checkItem}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.checkLabel}>Safety Officer Present</Text>
-            <Text style={styles.checkSub}>
-              Authorized safety personnel on-site
-            </Text>
-          </View>
-          <Switch
-            value={checks.safetyPersonPresent}
-            onValueChange={(v) =>
-              setChecks({ ...checks, safetyPersonPresent: v })
-            }
-            trackColor={{ false: "#D1D1D1", true: "#2ECC71" }}
-          />
-        </Card>
+        {Object.keys(checks).map((key) => (
+          <Card key={key} style={styles.checkItem}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.checkLabel}>{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</Text>
+            </View>
+            <Switch
+              value={checks[key]}
+              onValueChange={(v) => setChecks({ ...checks, [key]: v })}
+              trackColor={{ false: "#D1D1D1", true: "#2ECC71" }}
+            />
+          </Card>
+        ))}
 
         <Button
-          label={
-            isSafetyComplete
-              ? "💥 Initialize Blast Countdown"
-              : "Complete All Checks"
-          }
+          label={isSafetyComplete ? "💥 Initialize Blast Countdown" : "Complete All Checks"}
           onPress={handleSchedule}
           disabled={!isSafetyComplete || loading}
           style={styles.scheduleButton}
         />
 
-        <Pressable
-          style={styles.backLink}
-          onPress={() => setStep(1)}
-          disabled={loading}
-        >
+        <Pressable style={styles.backLink} onPress={() => setStep(1)} disabled={loading}>
           <Text style={styles.backLinkText}>Edit Details</Text>
         </Pressable>
       </View>
@@ -449,13 +299,10 @@ const PlanEventScreen = () => {
       style={styles.container}
     >
       <View style={styles.header}>
-        <Pressable
-          onPress={() => navigation.goBack()}
-          style={styles.closeButton}
-        >
+        <Pressable onPress={() => navigation.goBack()} style={styles.closeButton}>
           <Text style={styles.closeButtonText}>✕</Text>
         </Pressable>
-        <Text style={styles.headerTitle}>Schedule Blast Operation</Text>
+        <Text style={styles.headerTitle}>Schedule Blast</Text>
         <View style={{ width: 40 }} />
       </View>
       <ScrollView contentContainerStyle={styles.content}>
@@ -469,190 +316,48 @@ export default PlanEventScreen;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F8F9FA" },
-
   header: {
     backgroundColor: "#1A1F3A",
-
     paddingTop: 50,
-
     paddingBottom: 20,
-
     paddingHorizontal: 20,
-
     flexDirection: "row",
-
     justifyContent: "space-between",
-
     alignItems: "center",
   },
-
   headerTitle: { fontSize: 18, fontWeight: "bold", color: "#FFF" },
-
   closeButton: { padding: 5 },
-
   closeButtonText: { color: "#FFF", fontSize: 20 },
-
   content: { padding: 25 },
-
   section: { width: "100%" },
-
-  sectionTitle: {
-    fontSize: 22,
-
-    fontWeight: "bold",
-
-    color: "#1A1F3A",
-
-    marginBottom: 10,
-  },
-
+  sectionTitle: { fontSize: 22, fontWeight: "bold", color: "#1A1F3A", marginBottom: 10 },
   stepDescription: { fontSize: 14, color: "#95A5A6", marginBottom: 30 },
-
-  label: {
-    fontSize: 14,
-
-    fontWeight: "600",
-
-    color: "#2C3E50",
-
-    marginBottom: 8,
-
-    marginTop: 15,
-  },
-
-  input: {
-    backgroundColor: "#FFF",
-
-    borderRadius: 12,
-
-    padding: 15,
-
-    fontSize: 16,
-
-    borderWidth: 1,
-
-    borderColor: "#E0E0E0",
-  },
-
-  pickerContainer: {
-    backgroundColor: "#FFF",
-
-    borderRadius: 12,
-
-    borderWidth: 1,
-
-    borderColor: "#E0E0E0",
-
-    overflow: "hidden",
-
-    marginTop: 8,
-  },
-
+  formatNote: { fontSize: 11, color: "#95A5A6", marginTop: 5, marginLeft: 5 },
   checkItem: {
     flexDirection: "row",
-
     alignItems: "center",
-
     backgroundColor: "#FFF",
-
     padding: 15,
-
     borderRadius: 12,
-
     marginBottom: 15,
-
     borderWidth: 1,
-
     borderColor: "#ECF0F1",
   },
-
   checkLabel: { fontSize: 16, fontWeight: "bold", color: "#2C3E50" },
-
-  checkSub: { fontSize: 12, color: "#95A5A6", marginTop: 2 },
-
   primaryButton: {
     backgroundColor: "#1A1F3A",
-
     borderRadius: 12,
-
     paddingVertical: 18,
-
     alignItems: "center",
-
     marginTop: 30,
   },
-
   scheduleButton: {
     backgroundColor: "#FF9900",
-
     borderRadius: 12,
-
     paddingVertical: 18,
-
     alignItems: "center",
-
     marginTop: 30,
-
-    shadowColor: "#FF9900",
-
-    shadowOffset: { width: 0, height: 4 },
-
-    shadowOpacity: 0.3,
-
-    shadowRadius: 8,
-
-    elevation: 5,
   },
-
-  disabledButton: {
-    backgroundColor: "#BDC3C7",
-
-    shadowOpacity: 0,
-
-    elevation: 0,
-  },
-
-  primaryButtonText: { color: "#FFF", fontSize: 16, fontWeight: "bold" },
-
-  datePickerButton: {
-    backgroundColor: "#FFF",
-
-    borderRadius: 12,
-
-    padding: 16,
-
-    borderWidth: 1,
-
-    borderColor: "#E0E0E0",
-
-    marginTop: 10,
-
-    flexDirection: "row",
-
-    justifyContent: "space-between",
-
-    alignItems: "center",
-  },
-
-  datePickerContent: { flex: 1 },
-
-  datePickerLabel: {
-    fontSize: 14,
-
-    fontWeight: "600",
-
-    color: "#1A1F3A",
-
-    marginBottom: 6,
-  },
-
-  datePickerText: { fontSize: 16, color: "#2C3E50" },
-
-  datePickerIcon: { fontSize: 22, marginLeft: 12 },
-
-  formatNote: { fontSize: 11, color: "#95A5A6", marginTop: 5, marginLeft: 5 },
-
   backLink: { marginTop: 20, alignItems: "center" },
-
   backLinkText: { color: "#95A5A6", fontWeight: "600" },
 });
