@@ -87,17 +87,12 @@ const SignupScreen = () => {
 
       
       let finalCode = companyCode.trim().toUpperCase();
-      
       let isJoining = !!finalCode;
 
-      
-      
       if (isJoining) {
-        
         const companyDoc = await getDoc(doc(db, "companies", finalCode));
-        
         if (!companyDoc.exists()) {
-          throw new Error("Invalid company code. Please check and try again.");
+          throw new Error("Invalid company code. This company does not exist. Please check the code or leave it blank to create a new one.");
         }
       } else {
         

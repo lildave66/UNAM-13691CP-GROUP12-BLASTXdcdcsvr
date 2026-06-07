@@ -5,7 +5,7 @@ import { StyleSheet, Text, View, Pressable } from "react-native";
 import Badge from "./Badge";
 
 const BlastItem = ({ blast, onPress }) => {
-  const theme = useTheme();
+  const { theme } = useTheme();
   const isScheduled = blast.status === "Scheduled";
   const statusColor = isScheduled ? "#FF9900" : "#2ECC71";
   const authorName = blast.createdByName || blast.createdBy || "Unknown user";
@@ -24,14 +24,14 @@ const BlastItem = ({ blast, onPress }) => {
   const styles = StyleSheet.create({
     container: {
       flexDirection: "row",
-      backgroundColor: theme.colors.card,
+      backgroundColor: theme.card,
       borderRadius: 12,
       padding: 15,
       marginBottom: 10,
       alignItems: "center",
       gap: 12,
       borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderColor: theme.border,
     },
     statusIndicator: {
       width: 35,
@@ -42,7 +42,7 @@ const BlastItem = ({ blast, onPress }) => {
     },
     statusIcon: {
       fontSize: 16,
-      color: theme.colors.text,
+      color: theme.text,
     },
     info: {
       flex: 1,
@@ -50,22 +50,22 @@ const BlastItem = ({ blast, onPress }) => {
     title: {
       fontSize: 14,
       fontWeight: "bold",
-      color: theme.colors.text,
+      color: theme.text,
     },
     subtitle: {
       fontSize: 12,
-      color: theme.colors.text,
+      color: theme.text,
       marginTop: 2,
     },
     createdBy: {
       fontSize: 11,
-      color: theme.colors.text,
+      color: theme.text,
       fontStyle: "italic",
       marginTop: 2,
     },
     time: {
       fontSize: 11,
-      color: theme.colors.text,
+      color: theme.text,
       marginTop: 1,
     },
     newBadge: {

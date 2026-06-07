@@ -195,7 +195,7 @@ const BlastHistoryScreen = () => {
 
   const filteredBlasts = getFilteredBlasts();
 
-  if (loading) {
+  if (loading && blasts.length === 0) {
     return (
       <View style={[styles.container, { justifyContent: "center" }]}>
         <ActivityIndicator size="large" color="#FF9900" />
@@ -207,7 +207,7 @@ const BlastHistoryScreen = () => {
     <View style={styles.container}>
       {}
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.backButtonContainer}>
           <Text style={styles.backButton}>← Back</Text>
         </Pressable>
         <Text style={styles.headerTitle}>Blast Operations Log</Text>
@@ -233,25 +233,27 @@ const BlastHistoryScreen = () => {
           placeholder="Search by title, area, or status"
           placeholderTextColor="#95A5A6"
         />
-        {["All", "Scheduled", "Completed", "Failed"].map((status) => (
-          <Pressable
-            key={status}
-            style={[
-              styles.filterButton,
-              filterStatus === status && styles.filterButtonActive,
-            ]}
-            onPress={() => setFilterStatus(status)}
-          >
-            <Text
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+          {["All", "Scheduled", "Completed", "Failed"].map((status) => (
+            <Pressable
+              key={status}
               style={[
-                styles.filterButtonText,
-                filterStatus === status && styles.filterButtonTextActive,
+                styles.filterButton,
+                filterStatus === status && styles.filterButtonActive,
               ]}
+              onPress={() => setFilterStatus(status)}
             >
-              {status}
-            </Text>
-          </Pressable>
-        ))}
+              <Text
+                style={[
+                  styles.filterButtonText,
+                  filterStatus === status && styles.filterButtonTextActive,
+                ]}
+              >
+                {status}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
       </View>
 
       {}
@@ -269,6 +271,13 @@ const BlastHistoryScreen = () => {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={loading}
+              onRefresh={loadBlastHistory}
+              tintColor="#FF9900"
+            />
+          }
         />
       ) : (
         <EmptyState
@@ -309,6 +318,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
 
     borderBottomColor: "#ECEFF1",
+  },
+
+  backButtonContainer: {
+    padding: 5,
   },
 
   backButton: {
@@ -362,6 +375,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     color: "#1A1F3A",
   },
+
+  filterScroll: {
+    flexDirection: 'row',
+  },
+
   filterButton: {
     paddingHorizontal: 12,
 
@@ -372,7 +390,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#F0F0F0",
 
     marginRight: 8,
-    marginBottom: 6,
   },
 
   filterButtonActive: {

@@ -162,6 +162,39 @@ const DashboardScreen = () => {
     loadDashboardData(true);
   }, []);
 
+  const cancelBlast = async (blastId) => {
+    Alert.alert(
+      "Cancel Blast",
+      "Are you sure you want to cancel this scheduled blast? It will be moved to failed/unsuccessful status.",
+      [
+        { text: "No", style: "cancel" },
+        {
+          text: "Yes, Cancel",
+          style: "destructive",
+          onPress: async () => {
+            setLoading(true);
+            const success = await storage.recordBlastResults(
+              userData?.companyCode,
+              blastId,
+              {
+                failureReason: "Cancelled by user",
+                cancelledAt: new Date().toISOString(),
+              },
+            );
+
+            if (success) {
+              await storage.updateBlastStatus(userData?.companyCode, blastId, "Failed");
+              loadDashboardData(true);
+            } else {
+              Alert.alert("Error", "Failed to cancel blast.");
+            }
+            setLoading(false);
+          },
+        },
+      ],
+    );
+  };
+
   const filteredBlasts = blasts.filter((blast) => {
     const query = searchTerm.trim().toLowerCase();
     if (!query) return true;
@@ -268,14 +301,7 @@ const DashboardScreen = () => {
         {nextBlast ? (
           <Card style={styles.timerCard}>
             <Text style={styles.timerLabel}>NEXT BLAST: {nextBlast.title}</Text>
-            <View style={styles.blastDetails}>
-              <Text style={styles.blastDetailsText}>
-                📍 {nextBlast.targetArea}
-              </Text>
-              <Text style={styles.blastDetailsText}>
-                ⚡ {nextBlast.blastSize} kg
-              </Text>
-            </View>
+            <Text style={styles.timeLeftLabel}>Time left:</Text>
             <View style={styles.countdownContainer}>
               <View style={styles.timeBox}>
                 <Text style={styles.timeValue}>{timeLeft.days}</Text>
@@ -293,15 +319,22 @@ const DashboardScreen = () => {
               </View>
             </View>
             <View style={styles.footerRow}>
-              <Text style={styles.launchDateText}>
-                Scheduled: {nextBlast.launchDate || "TBD"}
-              </Text>
-              <Text style={styles.creatorText}>
-                By:{" "}
-                {nextBlast.createdByName ||
-                  nextBlast.createdBy ||
-                  "Unknown user"}
-              </Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.launchDateText}>
+                  Scheduled: {nextBlast.launchDate || "TBD"}
+                </Text>
+                <Text style={styles.creatorText}>
+                  Set by: {nextBlast.createdByName || "Unknown user"}
+                </Text>
+              </View>
+              {canEdit && (
+                <Pressable
+                  onPress={() => cancelBlast(nextBlast.id)}
+                  style={styles.cancelButton}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel Blast</Text>
+                </Pressable>
+              )}
             </View>
           </Card>
         ) : (
@@ -309,7 +342,6 @@ const DashboardScreen = () => {
             icon="⏲️"
             title="No Active Blast Timers"
             message="Schedule a blast operation to begin countdown"
-            style={styles.emptyTimerCard}
           />
         )}
 
@@ -769,4 +801,26 @@ const styles = StyleSheet.create({
   emptyState: { padding: 30, alignItems: "center" },
 
   emptyStateText: { color: "#95A5A6", fontSize: 14 },
+
+  timeLeftLabel: {
+    color: "#95A5A6",
+    fontSize: 10,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginBottom: 5,
+  },
+
+  cancelButton: {
+    backgroundColor: "#E74C3C",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignSelf: "flex-end",
+  },
+
+  cancelButtonText: {
+    color: "#FFF",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
 });

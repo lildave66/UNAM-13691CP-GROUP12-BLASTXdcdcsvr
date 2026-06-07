@@ -440,6 +440,21 @@ export const storage = {
     }
   },
 
+  updateBlastStatus: async (companyCode, blastId, status) => {
+    try {
+      if (MOCK_MODE) return true;
+      const blastDocRef = doc(db, "companies", companyCode, "blasts", blastId);
+      await updateDoc(blastDocRef, {
+        status,
+        updatedAt: serverTimestamp(),
+      });
+      return true;
+    } catch (error) {
+      console.error("Error updating blast status:", error);
+      return false;
+    }
+  },
+
   getBlasts: async (companyCode, maxResults = 20) => {
     try {
       if (MOCK_MODE) return MOCK_BLASTS;
