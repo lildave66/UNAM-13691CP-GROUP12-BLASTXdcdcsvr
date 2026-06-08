@@ -12,7 +12,7 @@ import {
 
 import React, { useState } from "react";
 
-import { useNavigation } from "@react-navigation/native";
+import { CommonActions, useNavigation } from "@react-navigation/native";
 
 import { storage, RBAC } from "../utils/storage";
 
@@ -27,7 +27,6 @@ const PlanEventScreen = () => {
 
   const [userData, setUserData] = useState(null);
 
-  
   const [typedDate, setTypedDate] = useState(() => {
     const nextHour = new Date();
     nextHour.setHours(nextHour.getHours() + 1, 0, 0, 0);
@@ -37,13 +36,13 @@ const PlanEventScreen = () => {
   const [typedTime, setTypedTime] = useState(() => {
     const nextHour = new Date();
     nextHour.setHours(nextHour.getHours() + 1, 0, 0, 0);
-    return `${String(nextHour.getHours()).padStart(2, "0")}:${String(nextHour.getMinutes()).padStart(2, "0")}`;
+    return `${String(nextHour.getHours()).padStart(2, "0")}:${String(nextHour.getMinutes()).padStart(2, "0")}:${String(nextHour.getSeconds()).padStart(2, "0")}`;
   });
 
   const [blastData, setBlastData] = useState({
     title: "",
     description: "",
-    launchDate: "", 
+    launchDate: "",
     blastSize: "",
     targetArea: "",
     holes: "",
@@ -82,8 +81,16 @@ const PlanEventScreen = () => {
   const validateStep1 = () => {
     const MAX_SCHEDULE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
-    if (!blastData.title.trim() || !blastData.targetArea.trim() || !blastData.blastSize.trim() || !blastData.holes.trim()) {
-      Alert.alert("Input Error", "Please fill in all required fields marked with *.");
+    if (
+      !blastData.title.trim() ||
+      !blastData.targetArea.trim() ||
+      !blastData.blastSize.trim() ||
+      !blastData.holes.trim()
+    ) {
+      Alert.alert(
+        "Input Error",
+        "Please fill in all required fields marked with *.",
+      );
       return false;
     }
 
@@ -92,9 +99,8 @@ const PlanEventScreen = () => {
       return false;
     }
 
-    
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    const timeRegex = /^\d{2}:\d{2}$/;
+    const timeRegex = /^\d{2}:\d{2}:\d{2}$/;
 
     if (!dateRegex.test(typedDate)) {
       Alert.alert("Date Error", "Please enter date as YYYY-MM-DD");
@@ -102,7 +108,7 @@ const PlanEventScreen = () => {
     }
 
     if (!timeRegex.test(typedTime)) {
-      Alert.alert("Time Error", "Please enter time as HH:MM (24h format)");
+      Alert.alert("Time Error", "Please enter time as HH:MM:SS (24h format)");
       return false;
     }
 
@@ -116,11 +122,14 @@ const PlanEventScreen = () => {
 
     const maxAllowedDate = Date.now() + MAX_SCHEDULE_WINDOW_MS;
     if (targetDate > maxAllowedDate) {
-      Alert.alert("Schedule Error", "Blasts can only be scheduled within the next 24 hours.");
+      Alert.alert(
+        "Schedule Error",
+        "Blasts can only be scheduled within the next 24 hours.",
+      );
       return false;
     }
 
-    setBlastData(prev => ({ ...prev, launchDate: launchDateString }));
+    setBlastData((prev) => ({ ...prev, launchDate: launchDateString }));
     return true;
   };
 
@@ -146,20 +155,19 @@ const PlanEventScreen = () => {
     setLoading(false);
 
     if (saved) {
-      Alert.alert(
-        "Success", 
-        "Blast scheduled successfully.", 
-        [
-          { 
-            text: "Go to Dashboard", 
-            onPress: () => {
-              setTimeout(() => {
-                navigation.navigate("Dashboard");
-              }, 100);
-            } 
-          }
-        ]
-      );
+      Alert.alert("Success", "Blast scheduled successfully.", [
+        {
+          text: "Go to Dashboard",
+          onPress: () => {
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: "Dashboard" }],
+              }),
+            );
+          },
+        },
+      ]);
     } else {
       Alert.alert("Error", "Failed to schedule blast.");
     }
@@ -193,7 +201,7 @@ const PlanEventScreen = () => {
             multiline
           />
 
-          <View style={{ flexDirection: 'row', gap: 10 }}>
+          <View style={{ flexDirection: "row", gap: 10 }}>
             <Input
               label="Blast Size (kg) *"
               placeholder="e.g., 50"
@@ -217,17 +225,21 @@ const PlanEventScreen = () => {
             label="Explosives Used"
             placeholder="e.g., ANFO, Dynamite"
             value={blastData.explosivesUsed}
-            onChangeText={(value) => setBlastData({ ...blastData, explosivesUsed: value })}
+            onChangeText={(value) =>
+              setBlastData({ ...blastData, explosivesUsed: value })
+            }
           />
 
           <Input
             label="Detonation Pattern"
             placeholder="e.g., Electronic sequencing"
             value={blastData.detonationPattern}
-            onChangeText={(value) => setBlastData({ ...blastData, detonationPattern: value })}
+            onChangeText={(value) =>
+              setBlastData({ ...blastData, detonationPattern: value })
+            }
           />
 
-          <View style={{ flexDirection: 'row', gap: 10 }}>
+          <View style={{ flexDirection: "row", gap: 10 }}>
             <Input
               label="Set Date (YYYY-MM-DD) *"
               placeholder="2026-06-04"
@@ -236,8 +248,8 @@ const PlanEventScreen = () => {
               style={{ flex: 1.5 }}
             />
             <Input
-              label="Set Time (HH:MM) *"
-              placeholder="14:30"
+              label="Set Time (HH:MM:SS) *"
+              placeholder="14:30:45"
               value={typedTime}
               onChangeText={setTypedTime}
               style={{ flex: 1 }}
@@ -269,7 +281,11 @@ const PlanEventScreen = () => {
         {Object.keys(checks).map((key) => (
           <Card key={key} style={styles.checkItem}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.checkLabel}>{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</Text>
+              <Text style={styles.checkLabel}>
+                {key
+                  .replace(/([A-Z])/g, " $1")
+                  .replace(/^./, (str) => str.toUpperCase())}
+              </Text>
             </View>
             <Switch
               value={checks[key]}
@@ -280,13 +296,21 @@ const PlanEventScreen = () => {
         ))}
 
         <Button
-          label={isSafetyComplete ? "💥 Initialize Blast Countdown" : "Complete All Checks"}
+          label={
+            isSafetyComplete
+              ? "💥 Initialize Blast Countdown"
+              : "Complete All Checks"
+          }
           onPress={handleSchedule}
           disabled={!isSafetyComplete || loading}
           style={styles.scheduleButton}
         />
 
-        <Pressable style={styles.backLink} onPress={() => setStep(1)} disabled={loading}>
+        <Pressable
+          style={styles.backLink}
+          onPress={() => setStep(1)}
+          disabled={loading}
+        >
           <Text style={styles.backLinkText}>Edit Details</Text>
         </Pressable>
       </View>
@@ -299,7 +323,10 @@ const PlanEventScreen = () => {
       style={styles.container}
     >
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.closeButton}>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          style={styles.closeButton}
+        >
           <Text style={styles.closeButtonText}>✕</Text>
         </Pressable>
         <Text style={styles.headerTitle}>Schedule Blast</Text>
@@ -330,7 +357,12 @@ const styles = StyleSheet.create({
   closeButtonText: { color: "#FFF", fontSize: 20 },
   content: { padding: 25 },
   section: { width: "100%" },
-  sectionTitle: { fontSize: 22, fontWeight: "bold", color: "#1A1F3A", marginBottom: 10 },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#1A1F3A",
+    marginBottom: 10,
+  },
   stepDescription: { fontSize: 14, color: "#95A5A6", marginBottom: 30 },
   formatNote: { fontSize: 11, color: "#95A5A6", marginTop: 5, marginLeft: 5 },
   checkItem: {

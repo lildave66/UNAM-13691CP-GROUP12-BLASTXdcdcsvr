@@ -41,13 +41,13 @@ const RecordBlastResultsScreen = () => {
     blast?.status === "Scheduled" &&
     new Date(blast.launchDate?.replace(" ", "T") || 0).getTime() > Date.now();
 
-  const canEditResults = canEdit && !isBlastLockedForEditing;
+  const canEditResults = canEdit && (!isBlastLockedForEditing || isAdminUser);
 
   const [results, setResults] = useState({
     rocksFragmented: blast?.results?.rocksFragmented || "",
-    
+
     productivityRating: blast?.results?.productivityRating || "",
-    
+
     safetyIncidents: blast?.results?.safetyIncidents?.toString() || "0",
 
     notes: blast?.results?.notes || "",
@@ -60,7 +60,6 @@ const RecordBlastResultsScreen = () => {
   const handleExport = async () => {
     setExporting(true);
     try {
-      
       const singleBlastReport = [
         {
           ...blast,
@@ -109,7 +108,7 @@ const RecordBlastResultsScreen = () => {
   };
 
   const handleSave = async () => {
-    if (isBlastLockedForEditing) {
+    if (isBlastLockedForEditing && !isAdminUser) {
       Alert.alert(
         "Locked",
         "This blast cannot be edited until the scheduled timer finishes.",
@@ -220,7 +219,7 @@ const RecordBlastResultsScreen = () => {
         )}
 
         {}
-        {isBlastLockedForEditing && (
+        {isBlastLockedForEditing && !isAdminUser && (
           <View style={styles.lockBanner}>
             <Text style={styles.lockTitle}>⏳ Blast is locked</Text>
             <Text style={styles.lockText}>
@@ -301,7 +300,7 @@ const RecordBlastResultsScreen = () => {
             <Button
               label="Save Blast Report"
               onPress={handleSave}
-              disabled={loading || isBlastLockedForEditing}
+              disabled={loading || (isBlastLockedForEditing && !isAdminUser)}
               style={styles.saveButton}
             />
 

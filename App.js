@@ -1,8 +1,3 @@
-
-
-
-
-
 import React, { useEffect, useState } from "react";
 
 import { NavigationContainer } from "@react-navigation/native";
@@ -16,19 +11,17 @@ import { auth } from "./src/utils/firebase";
 import AppNavigator from "./src/navigation/AppNavigator";
 import { ThemeProvider } from "./src/utils/theme";
 
-
 export default function App() {
   const [user, setUser] = useState(null);
   const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
-    
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      if (initializing) setInitializing(false);
-      
-      if (user) {
-        console.log("User is signed in:", user.uid);
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setInitializing(false);
+
+      if (currentUser) {
+        console.log("User is signed in:", currentUser.uid);
       } else {
         console.log("No user signed in");
       }
@@ -39,7 +32,7 @@ export default function App() {
     return () => {
       unsubscribe();
     };
-  }, [initializing]);
+  }, []);
 
   if (initializing) {
     return (
@@ -48,7 +41,6 @@ export default function App() {
       </View>
     );
   }
-
 
   return (
     <ThemeProvider>

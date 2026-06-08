@@ -44,11 +44,9 @@ const DashboardScreen = () => {
   });
 
   const [timeLeft, setTimeLeft] = useState({
-    days: "00",
-
     hours: "00",
-
     mins: "00",
+    secs: "00",
   });
 
   useFocusEffect(
@@ -77,24 +75,18 @@ const DashboardScreen = () => {
     const difference = target - now;
 
     if (difference <= 0) {
-      setTimeLeft({ days: "00", hours: "00", mins: "00" });
+      setTimeLeft({ hours: "00", mins: "00", secs: "00" });
       return;
     }
 
-    const d = Math.floor(difference / (1000 * 60 * 60 * 24));
-
-    const h = Math.floor(
-      (difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
-    );
-
+    const h = Math.floor(difference / (1000 * 60 * 60));
     const m = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+    const s = Math.floor((difference % (1000 * 60)) / 1000);
 
     setTimeLeft({
-      days: d.toString().padStart(2, "0"),
-
       hours: h.toString().padStart(2, "0"),
-
       mins: m.toString().padStart(2, "0"),
+      secs: s.toString().padStart(2, "0"),
     });
   };
 
@@ -172,7 +164,11 @@ const DashboardScreen = () => {
             );
 
             if (success) {
-              await storage.updateBlastStatus(userData?.companyCode, blastId, "Failed");
+              await storage.updateBlastStatus(
+                userData?.companyCode,
+                blastId,
+                "Failed",
+              );
               loadDashboardData(true);
             } else {
               Alert.alert("Error", "Failed to cancel blast.");
@@ -274,21 +270,13 @@ const DashboardScreen = () => {
         </Pressable>
       </View>
 
-      <ScrollView
-        style={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {}
         {nextBlast ? (
           <Card style={styles.timerCard}>
             <Text style={styles.timerLabel}>NEXT BLAST: {nextBlast.title}</Text>
             <Text style={styles.timeLeftLabel}>Time left:</Text>
             <View style={styles.countdownContainer}>
-              <View style={styles.timeBox}>
-                <Text style={styles.timeValue}>{timeLeft.days}</Text>
-                <Text style={styles.timeUnit}>Days</Text>
-              </View>
-              <Text style={styles.timeDivider}>:</Text>
               <View style={styles.timeBox}>
                 <Text style={styles.timeValue}>{timeLeft.hours}</Text>
                 <Text style={styles.timeUnit}>Hrs</Text>
@@ -298,14 +286,25 @@ const DashboardScreen = () => {
                 <Text style={styles.timeValue}>{timeLeft.mins}</Text>
                 <Text style={styles.timeUnit}>Mins</Text>
               </View>
+              <Text style={styles.timeDivider}>:</Text>
+              <View style={styles.timeBox}>
+                <Text style={styles.timeValue}>{timeLeft.secs}</Text>
+                <Text style={styles.timeUnit}>Secs</Text>
+              </View>
             </View>
             <View style={styles.footerRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.launchDateText}>
-                  📅 Date: {nextBlast.launchDate ? nextBlast.launchDate.split(' ')[0] : "TBD"}
+                  📅 Date:{" "}
+                  {nextBlast.launchDate
+                    ? nextBlast.launchDate.split(" ")[0]
+                    : "TBD"}
                 </Text>
                 <Text style={styles.launchDateText}>
-                  🕒 Time: {nextBlast.launchDate ? nextBlast.launchDate.split(' ')[1] : "TBD"}
+                  🕒 Time:{" "}
+                  {nextBlast.launchDate
+                    ? nextBlast.launchDate.split(" ")[1]
+                    : "TBD"}
                 </Text>
                 <Text style={styles.creatorText}>
                   👤 Set by: {nextBlast.createdByName || "Unknown user"}
